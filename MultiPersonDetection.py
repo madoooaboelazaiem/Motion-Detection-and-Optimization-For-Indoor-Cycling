@@ -3,10 +3,10 @@ import time
 import numpy as np
 from random import randint
 import os
-cap = cv2.VideoCapture(2)
-hasFrame, frame = cap.read()
-cv2.imwrite('new.jpg',frame)
-image1 = cv2.imread('new.jpg')
+# cap = cv2.VideoCapture(2)
+# hasFrame, frame = cap.read()
+# cv2.imwrite('new.jpg',frame)
+image1 = cv2.imread('group.jpg')
 
 protoFile = "pose/coco/pose_deploy_linevec.prototxt"
 weightsFile = "pose/coco/pose_iter_440000.caffemodel"
@@ -161,7 +161,10 @@ def getPersonwiseKeypoints(valid_pairs, invalid_pairs):
                     personwiseKeypoints = np.vstack([personwiseKeypoints, row])
     return personwiseKeypoints
 
+<<<<<<< HEAD
+=======
 
+>>>>>>> b027f61f5e43bc6ad33d2fcb1a7ded6510508af1
 frameWidth = image1.shape[1]
 frameHeight = image1.shape[0]
 
@@ -225,5 +228,5 @@ for i in range(17):
 
 
 cv2.imshow("Detected Pose" , frameClone)
-os.remove("new.jpg")
+# os.remove("new.jpg")
 cv2.waitKey(0)

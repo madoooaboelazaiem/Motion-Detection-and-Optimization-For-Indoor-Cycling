@@ -20,10 +20,11 @@ elif MODE is "MPI" :
 inWidth = 368
 inHeight = 368
 threshold = 0.1
+count = 1
 
 
-input_source = "sample_video.mp4"
-cap = cv2.VideoCapture(2)
+input_source = "rendered.mp4"
+cap = cv2.VideoCapture(input_source)
 hasFrame, frame = cap.read()
 
 vid_writer = cv2.VideoWriter('output.avi',cv2.VideoWriter_fourcc('M','J','P','G'), 10, (frame.shape[1],frame.shape[0]))
@@ -32,6 +33,8 @@ net = cv2.dnn.readNetFromCaffe(protoFile, weightsFile)
 while cv2.waitKey(1) < 0:
     t = time.time()
     hasFrame, frame = cap.read()
+    cap.set(cv2.CAP_PROP_POS_FRAMES, count)
+    count = count + 4 # For Skipping Frames
     frameCopy = np.copy(frame)
     if not hasFrame:
         cv2.waitKey()
@@ -76,9 +79,9 @@ while cv2.waitKey(1) < 0:
         partB = pair[1]
 
         if points[partA] and points[partB]:
-            cv2.line(frame, points[partA], points[partB], (0, 255, 255), 3, lineType=cv2.LINE_AA)
-            cv2.circle(frame, points[partA], 8, (0, 0, 255), thickness=-1, lineType=cv2.FILLED)
-            cv2.circle(frame, points[partB], 8, (0, 0, 255), thickness=-1, lineType=cv2.FILLED)
+            cv2.line(frame, points[partA], points[partB], (0, 255, 255), 1, lineType=cv2.LINE_AA)
+            cv2.circle(frame, points[partA], 4, (0, 0, 255), thickness=-1, lineType=cv2.FILLED)
+            cv2.circle(frame, points[partB], 4, (0, 0, 255), thickness=-1, lineType=cv2.FILLED)
 
     cv2.putText(frame, "time taken = {:.2f} sec".format(time.time() - t), (50, 50), cv2.FONT_HERSHEY_COMPLEX, .8, (255, 50, 0), 2, lineType=cv2.LINE_AA)
     # cv2.putText(frame, "OpenPose using OpenCV", (50, 50), cv2.FONT_HERSHEY_COMPLEX, 1, (255, 50, 0), 2, lineType=cv2.LINE_AA)
