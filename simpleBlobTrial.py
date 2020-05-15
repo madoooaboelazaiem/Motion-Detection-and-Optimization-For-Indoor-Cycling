@@ -60,22 +60,25 @@ def SimpleBlobWithCamera():
     
     # Detect blobs.
     keypoints = detector.detect(frame)
-    blobPosition = []
     keypointCoordinates = []
+    keypointSizes = []
     detected_keypoints_toString = []
-    detected_keypoints = []
     keypoints_with_id = []
     keypoint_id = 1
+    keypoints = sorted(keypoints, key=lambda tup: (tup.pt[0],tup.pt[1]))
     for keypoint in keypoints:
-        blobPosition = (
-                keypoint.pt[0],
-                keypoint.pt[1],
-                keypoint.size,
-                keypoint.angle)
-        keypointCoordinates.append(blobPosition)
+        keypointCoordinates.append((keypoint.pt[0],
+                keypoint.pt[1]))
+        keypointSizes.append(keypoint.size)
+    # pts = [k.pt for k in keypoints]
+    # print('keypoints',keypoints)
+    # print('sortedKeypoints',testy)
+    # print('keypoints',keypointCoordinates)
+    # keypointCoordinates = sortTuples(keypointCoordinates)
+    # print('Sorted Keypoints',keypointCoordinates)
     for i in range(len(keypoints)):
         keypoints_with_id.append(keypointCoordinates[i] + (keypoint_id,))
-        detected_keypoints_toString.append((('X: ')+str(keypointCoordinates[i][0]))+('  Y: ')+(str(keypointCoordinates[i][1]))+' size: '+(str(keypointCoordinates[i][2]))+' angle: '+(str(keypointCoordinates[i][3]))) #Converting the x and y positions to strings
+        detected_keypoints_toString.append((('X: ')+str(keypointCoordinates[i][0]))+('  Y: ')+(str(keypointCoordinates[i][1]))+' size: '+(str(keypointSizes[i]))) #Converting the x and y positions to strings
         keypoint_id += 1
 
     nblobs = len(keypoints)
@@ -85,15 +88,17 @@ def SimpleBlobWithCamera():
     font = cv2.FONT_HERSHEY_SIMPLEX
     for i in range(nblobs):
         # print(keypoints_with_id[i])
-        cv2.putText(im_with_keypoints, str(keypoints_with_id[i][4]) ,(int(keypoints_with_id[i][0]),int(keypoints_with_id[i][1])), font, 0.5, (0, 255, 0), 2, cv2.LINE_AA)
-    im_with_keypoints=connectingBlobs(im_with_keypoints,keypoints)
+        cv2.putText(im_with_keypoints, str(keypoints_with_id[i][2]) ,(int(keypoints_with_id[i][0]),int(keypoints_with_id[i][1])), font, 0.5, (0, 255, 0), 2, cv2.LINE_AA)
     print(nblobs, 'From Blobs')
     # print(detected_keypoints_toString)
     # cv2.imwrite('Output.jpg', frameClone)
     # cimg = cv2.imread('Output.jpg',0)
     # cv2.imshow('gray',cimg)
     # Show keypoints
-    # im_with_keypoints = blobConnection(im_with_keypoints)
+    # im_with_keypoints=connectingBlobs(im_with_keypoints,keypoints)
+    # im_with_keypoints = connectingBlobs3(im_with_keypoints,keypointCoordinates)
+    im_with_keypoints = connectingBlobs4(im_with_keypoints,keypointCoordinates)
+
     cv2.imshow("new Keypoints", im_with_keypoints)
     vid_writer.write(im_with_keypoints)
 
@@ -328,8 +333,8 @@ def houghCircleDetectionVideo():
         print(blobPositions)
         cv2.imshow("new Keypoints", frame)
         vid_writer.write(frame)
-def connectingBlobs(img,keypoints):
-    pts = [k.pt for k in keypoints]#Opencv can't draw an arrow between a single point center and a list of points. So we'll have to go over it in a for loop as such
+def connectingBlobs(img,pts):
+    # pts = [k.pt for k in keypoints]#Opencv can't draw an arrow between a single point center and a list of points. So we'll have to go over it in a for loop as such
     # max(pts,key=lambda item:item[1])
     # print('points',pts)
     #max(lis,key=lambda item:item[1])
@@ -356,14 +361,108 @@ def connectingBlobs(img,keypoints):
             continue
     return img
 
+def connectingBlobs3(img,pts):
+    # pts = [k.pt for k in keypoints]#Opencv can't draw an arrow between a single point center and a list of points. So we'll have to go over it in a for loop as such
+    # max(pts,key=lambda item:item[1])
+    # print('points',pts)
+    #max(lis,key=lambda item:item[1])
+    # nearest = min(cooList, key=lambda x: distance(x, coordinate))
+    # centre = (246, 234) # This should be changed to the center of your image
+    FirstPt = tuple(map(int, pts[0]))
+    soFar = []
+    for i in range(len(pts)):
+        for pt in pts:
+            temp = pts[:]
+            temp.remove(pt)
 
+            # pt = tuple(map(int, pt))
+            # pt = min(soFar,key=lambda item:euclidean((item[0],item[1]), FirstPt))
+            # nearest = min(soFar, key=lambda x: distance(x, FirstPt))
+            # nearest = min(soFar, key=lambda c: (c[0]- FirstPt[0])**2 + (c[1]-FirstPt[1])**2)
+            try:
+                nearest = min(temp, key=lambda x: ((abs(x[0]-FirstPt[0]),abs(x[1]-FirstPt[1]))))
+                pt = tuple(map(int, nearest))
+                print('xxxxxxxxxxxx',(pt,FirstPt),temp)
+                # print(soFar)
+                img = cv2.line(img=img, pt1=(FirstPt), pt2=(pt), color=(0, 0, 255), thickness = 2)
+                FirstPt = pt
+            except:
+                continue
+    return img
+
+def connectingBlobs4(img,pts):
+    # pts = [k.pt for k in keypoints]#Opencv can't draw an arrow between a single point center and a list of points. So we'll have to go over it in a for loop as such
+    # max(pts,key=lambda item:item[1])
+    # print('points',pts)
+    #max(lis,key=lambda item:item[1])
+    # nearest = min(cooList, key=lambda x: distance(x, coordinate))
+    # centre = (246, 234) # This should be changed to the center of your image
+    for i in range(len(pts)):
+        for j in range(len(pts)):
+            if(j == int(len(pts)/2)-1):
+                j = j + 1
+            if(j+1 <= i):
+                FirstPt = tuple(map(int, pts[j]))
+                pt = tuple(map(int, pts[j+1]))
+                print('xxxxxxxxxxxx',(pt,FirstPt))
+                # print(soFar)
+                img = cv2.line(img=img, pt1=(FirstPt), pt2=(pt), color=(0, 0, 255), thickness = 2)
+    return img
+
+def connectingBlobs2(img,pts):
+   #Opencv can't draw an arrow between a single point center and a list of points. So we'll have to go over it in a for loop as such
+   # pts = [k.pt for k in keypoints]
+    # max(pts,key=lambda item:item[1])
+    # print('points',pts)
+    #max(lis,key=lambda item:item[1])
+    # nearest = min(cooList, key=lambda x: distance(x, coordinate))
+    # centre = (246, 234) # This should be changed to the center of your image
+    # 1. Generating array with the distances to the current blob that contains [(distance,coordinates)] get min tuple based on distance that is our coordinates
+    
+    n = len(pts)
+    for i in range(n):
+        FirstPt = pts[i]
+        temp =  pts[:]  # right way of cloning a list .. python is pass by reference so manipulation to the current reference would occur if t = pts
+        for j in range(n):
+            # print('j',j)
+            # print('length',len(pts))
+            # print('n',n)
+            # print('currentpoints',pts)
+            # print(pts[j])
+            # print(len(temp), 'tempp',temp)
+            temp.remove(pts[j]) # removing the current blob and the last blob not to draw a line to the same point again
+            # if FirstPt in temp:
+            #     temp.remove(FirstPt)
+            generateDistanceArray = getDistances(pts[j],temp)
+            temp =  pts[:]
+            # pt = tuple(map(int, pt))
+            # pt = min(soFar,key=lambda item:euclidean((item[0],item[1]), FirstPt))
+            # nearest = min(soFar, key=lambda x: distance(x, FirstPt))
+            # nearest = min(soFar, key=lambda c: (c[0]- FirstPt[0])**2 + (c[1]-FirstPt[1])**2)
+  
+            # nearest = min(temp, key=lambda x: ((abs(x[0]-FirstPt[0]),abs(x[1]-FirstPt[1]))))
+            try:
+                nearest = min(generateDistanceArray, key=lambda x: x[0])
+                # print('Nearest',nearest)
+                pt = tuple(map(int, nearest[1]))
+                FirstPt = tuple(map(int, FirstPt))
+                print('xxxxxxxxxxxx',(pt,FirstPt),temp)
+                # print(soFar)
+                img = cv2.line(img=img, pt1=(FirstPt), pt2=(pt), color=(0, 0, 255), thickness = 2)
+                FirstPt = pts[j]
+            except:
+                continue
+         
+    return img
 
 def distance(co1, co2):
     co1 = tuple(map(int, co1))
     # print('wwwwwwwwwwwwwwwwwwwwwwwwwww',co1 , co2)
     print('sssssssssssss',sqrt(pow(abs(co1[0] - co2[0]), 2) + pow(abs(co1[1] - co2[1]), 2)))
     return sqrt(pow(abs(co1[0] - co2[0]), 2) + pow(abs(co1[1] - co2[1]), 2))
-
+def sortTuples(data):
+    sort = sorted(data, key=lambda tup: (tup[0],tup[1]))
+    return sort
 def findingMinmumTask():
     cords =  [(455, 12), (188, 90), (74, 366), (10,10)]
     point = (18, 448)
@@ -375,7 +474,12 @@ def findingMinmumTask():
     closest = min(x,key=lambda item:item[0])
     print(x)
     print(closest)
-
+def getDistances(point,data):
+    distanceArray = []
+    for i in range(len(data)):
+        distanceArray.append((euclidean((data[i][0],data[i][1]), point),(data[i][0],data[i][1])))
+        print(distanceArray)
+    return distanceArray
 img = cv2.imread("./images/person2.png",1)
 # img = cv2.resize(img,(656,368))
     # SimpleBlobDetection(img)
