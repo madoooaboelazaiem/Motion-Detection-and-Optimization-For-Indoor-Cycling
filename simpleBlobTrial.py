@@ -268,8 +268,8 @@ def houghCirclesDetection(img):
     # Apply hough transform on the image
     circles = cv2.HoughCircles(img_blur, cv2.HOUGH_GRADIENT, 1, img.shape[0]/32, param1=200, param2=17, minRadius=20, maxRadius=20)
     # Draw detected circles
+    blobPositions = []
     if circles is not None:
-        blobPositions = []
         blobID = 1
         circles = np.uint16(np.around(circles))
         for i in circles[0, :]:
@@ -285,11 +285,52 @@ def houghCirclesDetection(img):
     plt.imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
     plt.show()
     cv2.imwrite('OutputHoughCirlces.jpg', img)
+def houghCircleDetectionVideo():
+   inputsource = 'output.avi'
+   cap = cv2.VideoCapture(inputsource)
+   hasFrame, frame = cap.read()
+   vid_writer = cv2.VideoWriter('outputHough.mp4',cv2.VideoWriter_fourcc('M','J','P','G'), 30, (frame.shape[1],frame.shape[0]))
+   count = 0
 
+   while cv2.waitKey(1) < 0:
+        hasFrame, frame = cap.read()
+        cap.set(cv2.CAP_PROP_POS_FRAMES, count)
+        count = count + 2 # For Skipping Frames
+        if not hasFrame:
+            cv2.waitKey()
+            break
+        countBlobs = 0
+        # Read image as gray-scale
+        # Convert to gray-scale
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        # Blur the image to reduce noise
+        img_blur = cv2.medianBlur(gray, 5)
+        # Apply hough transform on the image
+        # Default circles = cv2.HoughCircles(img_blur, cv2.HOUGH_GRADIENT, 1, img.shape[0]/32, param1=200, param2=17, minRadius=20, maxRadius=20)
+        circles = cv2.HoughCircles(img_blur, cv2.HOUGH_GRADIENT, 1, img.shape[0]/32, param1=200, param2=17, minRadius=4, maxRadius=15)
+        # Draw detected circles
+        blobPositions = []
+        if circles is not None:
+            blobID = 1
+            circles = np.uint16(np.around(circles))
+            for i in circles[0, :]:
+                blobPositions.append((i[0] ,i[1] , i[2],blobID))
+                countBlobs = countBlobs + 1
+                # Draw outer circle
+                cv2.circle(frame, (i[0], i[1]), i[2], (0, 255, 0), 2)
+                # Draw inner circle
+                cv2.circle(frame, (i[0], i[1]), 2, (0, 0, 255), 3)
+                cv2.putText(frame, str(blobID) ,(int(i[0]),int(i[1])),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 0), 2, cv2.LINE_AA)
+                blobID = blobID + 1
+        print('Blobs Detected ',countBlobs)
+        print(blobPositions)
+        cv2.imshow("new Keypoints", frame)
+        vid_writer.write(frame)
 
-img = cv2.imread("./images/cyclingP.png",1)
+img = cv2.imread("./images/person2.png",1)
 # img = cv2.resize(img,(656,368))
     # SimpleBlobDetection(img)
 # SimpleBlobWithCamera()
-houghCirclesDetection(img)
+# houghCirclesDetection(img)
+houghCircleDetectionVideo()
 cv2.waitKey(0)
