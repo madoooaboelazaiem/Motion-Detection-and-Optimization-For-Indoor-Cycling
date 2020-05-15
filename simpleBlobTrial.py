@@ -146,23 +146,20 @@ def SimpleBlobDetection(frame):
     
     # Detect blobs.
     keypoints = detector.detect(frame)
-    blobPosition = []
     keypointCoordinates = []
+    keypointSizes = []
     detected_keypoints_toString = []
-    detected_keypoints = []
     keypoints_with_id = []
     keypoint_id = 1
+    keypoints = sorted(keypoints, key=lambda tup: (tup.pt[0],tup.pt[1]))
     for keypoint in keypoints:
         # print(keypoint)
-        blobPosition = (
-                keypoint.pt[0],
-                keypoint.pt[1],
-                keypoint.size,
-                keypoint.angle)
-        keypointCoordinates.append(blobPosition)
+        keypointCoordinates.append((keypoint.pt[0],
+                keypoint.pt[1]))
+        keypointSizes.append(keypoint.size)
     for i in range(len(keypoints)):
         keypoints_with_id.append(keypointCoordinates[i] + (keypoint_id,))
-        detected_keypoints_toString.append((('X: ')+str(keypointCoordinates[i][0]))+('  Y: ')+(str(keypointCoordinates[i][1]))+' size: '+(str(keypointCoordinates[i][2]))+' angle: '+(str(keypointCoordinates[i][3]))) #Converting the x and y positions to strings
+        detected_keypoints_toString.append((('X: ')+str(keypointCoordinates[i][0]))+('  Y: ')+(str(keypointCoordinates[i][1]))+' size: '+(str(keypointSizes[i]))) #Converting the x and y positions to strings
         keypoint_id += 1
 
     nblobs = len(keypoints)
@@ -170,7 +167,7 @@ def SimpleBlobDetection(frame):
     
     # Draw detected blobs as red circles.
     # cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS ensures the size of the circle corresponds to the size of blob
-    im_with_keypoints = cv2.drawKeypoints(frame, keypoints, np.array([]), (0,0,255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+    im_with_keypoints = cv2.drawKeypoints(frame, keypoints, np.array([]), (0,255,255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
     font = cv2.FONT_HERSHEY_SIMPLEX
     x = (0,0)
     y = (0,0)
@@ -178,17 +175,17 @@ def SimpleBlobDetection(frame):
     a , b = (0,0)
     for i in range(nblobs):
         # print(keypoints_with_id[i])
-        cv2.putText(im_with_keypoints, str(keypoints_with_id[i][4]) ,(int(keypoints_with_id[i][0]),int(keypoints_with_id[i][1])), font, 0.5, (0, 255, 0), 2, cv2.LINE_AA)
-        if(keypoints_with_id[i][4] == 2):
-            x = (keypoints_with_id[i][0],keypoints_with_id[i][1])
-        if(keypoints_with_id[i][4] == 5):
-            y = (keypoints_with_id[i][0],keypoints_with_id[i][1])   
-        if(keypoints_with_id[i][4] == 4):
-            z = (keypoints_with_id[i][0],keypoints_with_id[i][1])   
+        cv2.putText(im_with_keypoints, str(keypoints_with_id[i][2]) ,(int(keypoints_with_id[i][0]),int(keypoints_with_id[i][1])), font, 0.5, (0, 255, 0), 2, cv2.LINE_AA)
+    #     if(keypoints_with_id[i][4] == 2):
+    #         x = (keypoints_with_id[i][0],keypoints_with_id[i][1])
+    #     if(keypoints_with_id[i][4] == 5):
+    #         y = (keypoints_with_id[i][0],keypoints_with_id[i][1])   
+    #     if(keypoints_with_id[i][4] == 4):
+    #         z = (keypoints_with_id[i][0],keypoints_with_id[i][1])   
         
-    a = (y[0]-x[0],y[1]-x[1])
-    b = (y[0]-z[0],y[1]-z[1])    
-    angleCalculation(a,b)
+    # a = (y[0]-x[0],y[1]-x[1])
+    # b = (y[0]-z[0],y[1]-z[1])    
+    # angleCalculation(a,b)
     print(nblobs, 'From Blobs')
     # print(detected_keypoints_toString)
     # cv2.imwrite('Output.jpg', frameClone)
@@ -197,6 +194,7 @@ def SimpleBlobDetection(frame):
     # Show keypoints
     # im_with_keypoints = blobConnection(im_with_keypoints)
     # cv2.imshow("new Keypoints", im_with_keypoints)
+    im_with_keypoints = houghCirclesConnection(im_with_keypoints,keypointCoordinates)
     plt.imshow(cv2.cvtColor(im_with_keypoints, cv2.COLOR_BGR2RGB))
     plt.show()
     cv2.imwrite('Output.jpg', im_with_keypoints)
@@ -320,18 +318,21 @@ def houghCircleDetectionVideo():
         circles = cv2.HoughCircles(img_blur, cv2.HOUGH_GRADIENT, 1, img.shape[0]/32, param1=200, param2=17, minRadius=4, maxRadius=15)
         # Draw detected circles
         blobPositions = []
+        blobCoord = []
         if circles is not None:
             blobID = 1
             circles = np.uint16(np.around(circles))
             for i in circles[0, :]:
                 blobPositions.append((i[0] ,i[1] , i[2],blobID))
+                blobCoord.append((i[0] ,i[1]))
                 countBlobs = countBlobs + 1
                 # Draw outer circle
-                cv2.circle(frame, (i[0], i[1]), i[2], (0, 255, 0), 2)
+                frame = cv2.circle(frame, (i[0], i[1]), i[2], (0, 255, 0), 2)
                 # Draw inner circle
-                cv2.circle(frame, (i[0], i[1]), 2, (0, 0, 255), 3)
-                cv2.putText(frame, str(blobID) ,(int(i[0]),int(i[1])),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 0), 2, cv2.LINE_AA)
+                frame = cv2.circle(frame, (i[0], i[1]), 2, (0, 0, 255), 3)
+                frame = cv2.putText(frame, str(blobID) ,(int(i[0]),int(i[1])),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 0), 2, cv2.LINE_AA)
                 blobID = blobID + 1
+            frame = houghCirclesConnection(frame,blobCoord)
         print('Blobs Detected ',countBlobs)
         print(blobPositions)
         cv2.imshow("new Keypoints", frame)
@@ -363,7 +364,6 @@ def connectingBlobs(img,pts):
         except:
             continue
     return img
-
 def connectingBlobs3(img,pts):
     # pts = [k.pt for k in keypoints]#Opencv can't draw an arrow between a single point center and a list of points. So we'll have to go over it in a for loop as such
     # max(pts,key=lambda item:item[1])
@@ -392,7 +392,6 @@ def connectingBlobs3(img,pts):
             except:
                 continue
     return img
-
 def connectingBlobs4(img,pts):
     # pts = [k.pt for k in keypoints]#Opencv can't draw an arrow between a single point center and a list of points. So we'll have to go over it in a for loop as such
     # max(pts,key=lambda item:item[1])
@@ -411,7 +410,6 @@ def connectingBlobs4(img,pts):
                 # print(soFar)
                 img = cv2.line(img=img, pt1=(FirstPt), pt2=(pt), color=(0, 0, 255), thickness = 2)
     return img
-
 def connectingBlobs2(img,pts):
    #Opencv can't draw an arrow between a single point center and a list of points. So we'll have to go over it in a for loop as such
    # pts = [k.pt for k in keypoints]
@@ -457,7 +455,6 @@ def connectingBlobs2(img,pts):
                 continue
          
     return img
-
 def houghCirclesConnection(img,pts):
     # pts = [k.pt for k in keypoints]#Opencv can't draw an arrow between a single point center and a list of points. So we'll have to go over it in a for loop as such
     # max(pts,key=lambda item:item[1])
@@ -470,10 +467,65 @@ def houghCirclesConnection(img,pts):
             if(j+1 <= i):
                 FirstPt = tuple(map(int, pts[j]))
                 pt = tuple(map(int, pts[j+1]))
-                print('xxxxxxxxxxxx',(pt,FirstPt))
+                # print('xxxxxxxxxxxx',(pt,FirstPt))
                 # print(soFar)
                 img = cv2.line(img=img, pt1=(FirstPt), pt2=(pt), color=(0, 255, 255), thickness = 2)
     return img
+def houghCircleDetectionVideoSorted():
+   inputsource = 'output.avi'
+   cap = cv2.VideoCapture(inputsource)
+   hasFrame, frame = cap.read()
+   vid_writer = cv2.VideoWriter('outputHough2.mp4',cv2.VideoWriter_fourcc('M','J','P','G'), 30, (frame.shape[1],frame.shape[0]))
+   count = 0
+
+   while cv2.waitKey(1) < 0:
+        hasFrame, frame = cap.read()
+        cap.set(cv2.CAP_PROP_POS_FRAMES, count)
+        count = count + 2 # For Skipping Frames
+        if not hasFrame:
+            cv2.waitKey()
+            break
+        countBlobs = 0
+        # Read image as gray-scale
+        # Convert to gray-scale
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        # Blur the image to reduce noise
+        img_blur = cv2.medianBlur(gray, 5)
+        # Apply hough transform on the image
+        # Default circles = cv2.HoughCircles(img_blur, cv2.HOUGH_GRADIENT, 1, img.shape[0]/32, param1=200, param2=17, minRadius=20, maxRadius=20)
+        circles = cv2.HoughCircles(img_blur, cv2.HOUGH_GRADIENT, 1, img.shape[0]/32, param1=200, param2=17, minRadius=4, maxRadius=15)
+        # Draw detected circles
+        # print(circles)
+        # circles = sorted(circles, key=lambda tup: tup)
+        # print(circles[0])  
+        blobPositions = []
+        blobCoord = []
+        if circles is not None:
+            blobID = 1
+            circles = np.uint16(np.around(circles))
+            for c in circles[0,:]:
+                blobCoord.append((c[0] ,c[1]))
+                blobPositions.append((c[0] ,c[1] , c[2]))
+                countBlobs = countBlobs + 1
+            blobCoord = sorted(blobCoord, key=lambda tup: (tup[0],tup[1]))
+            blobPositions = sorted(blobPositions, key=lambda tup: (tup[0],tup[1]))
+            for i in range(len(circles[0, :])):
+                # Draw outer circle
+                blobPositions[i] = blobPositions[i]+(blobID,)
+                frame = cv2.circle(frame, (blobPositions[i][0], blobPositions[i][1]), blobPositions[i][2], (0, 255, 0), 2)
+                # Draw inner circle
+                frame = cv2.circle(frame, (blobPositions[i][0], blobPositions[i][1]), 2, (0, 0, 255), 3)
+                frame = cv2.putText(frame, str(blobPositions[i][3]) ,(int(blobPositions[i][0]),int(blobPositions[i][1])),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 0), 2, cv2.LINE_AA)
+                blobID = blobID + 1
+            frame = houghCirclesConnection(frame,blobCoord)
+        print('Blobs Detected ',countBlobs)
+        # print(blobPositions)
+        cv2.imshow("new Keypoints", frame)
+        vid_writer.write(frame)
+
+
+
+
 def distance(co1, co2):
     co1 = tuple(map(int, co1))
     # print('wwwwwwwwwwwwwwwwwwwwwwwwwww',co1 , co2)
@@ -504,5 +556,6 @@ img = cv2.imread("./images/cyclingP.png",1)
     # SimpleBlobDetection(img)
 # SimpleBlobWithCamera()
 # houghCirclesDetection(img)
-houghCirclesDetection(img)
+houghCircleDetectionVideoSorted()
+# SimpleBlobDetection(img)
 cv2.waitKey(0)
