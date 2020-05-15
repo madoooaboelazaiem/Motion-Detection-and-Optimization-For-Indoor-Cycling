@@ -276,18 +276,21 @@ def houghCirclesDetection(img):
     circles = cv2.HoughCircles(img_blur, cv2.HOUGH_GRADIENT, 1, img.shape[0]/32, param1=200, param2=17, minRadius=20, maxRadius=20)
     # Draw detected circles
     blobPositions = []
+    blobCoord = []
     if circles is not None:
         blobID = 1
         circles = np.uint16(np.around(circles))
         for i in circles[0, :]:
             blobPositions.append((i[0] ,i[1] , i[2],blobID))
+            blobCoord.append((i[0] ,i[1]))
             blobID = blobID + 1
             countBlobs = countBlobs + 1
             # Draw outer circle
-            cv2.circle(img, (i[0], i[1]), i[2], (0, 255, 0), 2)
+            img = cv2.circle(img, (i[0], i[1]), i[2], (0, 255, 0), 3)
             # Draw inner circle
-            cv2.circle(img, (i[0], i[1]), 2, (0, 0, 255), 3)
-    print('Blobs Detected ',countBlobs)
+            img = cv2.circle(img, (i[0], i[1]), 2, (0, 0, 255), 3)
+        img = houghCirclesConnection(img,blobCoord)
+    print('Blobs Detected ',blobPositions)
     print(blobPositions)
     plt.imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
     plt.show()
@@ -455,6 +458,22 @@ def connectingBlobs2(img,pts):
          
     return img
 
+def houghCirclesConnection(img,pts):
+    # pts = [k.pt for k in keypoints]#Opencv can't draw an arrow between a single point center and a list of points. So we'll have to go over it in a for loop as such
+    # max(pts,key=lambda item:item[1])
+    # print('points',pts)
+    #max(lis,key=lambda item:item[1])
+    # nearest = min(cooList, key=lambda x: distance(x, coordinate))
+    # centre = (246, 234) # This should be changed to the center of your image
+    for i in range(len(pts)):
+        for j in range(len(pts)):
+            if(j+1 <= i):
+                FirstPt = tuple(map(int, pts[j]))
+                pt = tuple(map(int, pts[j+1]))
+                print('xxxxxxxxxxxx',(pt,FirstPt))
+                # print(soFar)
+                img = cv2.line(img=img, pt1=(FirstPt), pt2=(pt), color=(0, 255, 255), thickness = 2)
+    return img
 def distance(co1, co2):
     co1 = tuple(map(int, co1))
     # print('wwwwwwwwwwwwwwwwwwwwwwwwwww',co1 , co2)
@@ -480,10 +499,10 @@ def getDistances(point,data):
         distanceArray.append((euclidean((data[i][0],data[i][1]), point),(data[i][0],data[i][1])))
         print(distanceArray)
     return distanceArray
-img = cv2.imread("./images/person2.png",1)
+img = cv2.imread("./images/cyclingP.png",1)
 # img = cv2.resize(img,(656,368))
     # SimpleBlobDetection(img)
 # SimpleBlobWithCamera()
 # houghCirclesDetection(img)
-SimpleBlobWithCamera()
+houghCirclesDetection(img)
 cv2.waitKey(0)
