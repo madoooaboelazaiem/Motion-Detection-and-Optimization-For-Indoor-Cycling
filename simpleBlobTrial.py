@@ -2,11 +2,13 @@ import cv2
 import vg
 import numpy as np
 import matplotlib.pyplot as plt 
+from scipy.spatial.distance import euclidean
+from math import sqrt
 def SimpleBlobWithCamera():
    inputsource = 'output.avi'
    cap = cv2.VideoCapture(inputsource)
    hasFrame, frame = cap.read()
-   vid_writer = cv2.VideoWriter('output2.mp4',cv2.VideoWriter_fourcc('M','J','P','G'), 30, (frame.shape[1],frame.shape[0]))
+   vid_writer = cv2.VideoWriter('blobLines.mp4',cv2.VideoWriter_fourcc('M','J','P','G'), 30, (frame.shape[1],frame.shape[0]))
    count = 0
 
    while cv2.waitKey(1) < 0:
@@ -82,9 +84,9 @@ def SimpleBlobWithCamera():
     im_with_keypoints = cv2.drawKeypoints(frame, keypoints, np.array([]), (0,0,255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
     font = cv2.FONT_HERSHEY_SIMPLEX
     for i in range(nblobs):
-        print(keypoints_with_id[i])
+        # print(keypoints_with_id[i])
         cv2.putText(im_with_keypoints, str(keypoints_with_id[i][4]) ,(int(keypoints_with_id[i][0]),int(keypoints_with_id[i][1])), font, 0.5, (0, 255, 0), 2, cv2.LINE_AA)
-
+    im_with_keypoints=connectingBlobs(im_with_keypoints,keypoints)
     print(nblobs, 'From Blobs')
     # print(detected_keypoints_toString)
     # cv2.imwrite('Output.jpg', frameClone)
@@ -326,11 +328,58 @@ def houghCircleDetectionVideo():
         print(blobPositions)
         cv2.imshow("new Keypoints", frame)
         vid_writer.write(frame)
+def connectingBlobs(img,keypoints):
+    pts = [k.pt for k in keypoints]#Opencv can't draw an arrow between a single point center and a list of points. So we'll have to go over it in a for loop as such
+    # max(pts,key=lambda item:item[1])
+    # print('points',pts)
+    #max(lis,key=lambda item:item[1])
+    # nearest = min(cooList, key=lambda x: distance(x, coordinate))
+    # centre = (246, 234) # This should be changed to the center of your image
+    FirstPt = tuple(map(int, pts[0]))
+    soFar = []
+    for pt in pts:
+        temp = pts
+        temp.remove(pt)
+
+        # pt = tuple(map(int, pt))
+        # pt = min(soFar,key=lambda item:euclidean((item[0],item[1]), FirstPt))
+        # nearest = min(soFar, key=lambda x: distance(x, FirstPt))
+        # nearest = min(soFar, key=lambda c: (c[0]- FirstPt[0])**2 + (c[1]-FirstPt[1])**2)
+        try:
+            nearest = min(temp, key=lambda x: ((abs(x[0]-FirstPt[0]),abs(x[1]-FirstPt[1]))))
+            pt = tuple(map(int, nearest))
+            print('xxxxxxxxxxxx',(pt,FirstPt),temp)
+            # print(soFar)
+            img = cv2.line(img=img, pt1=(FirstPt), pt2=(pt), color=(0, 0, 255), thickness = 2)
+            FirstPt = pt
+        except:
+            continue
+    return img
+
+
+
+def distance(co1, co2):
+    co1 = tuple(map(int, co1))
+    # print('wwwwwwwwwwwwwwwwwwwwwwwwwww',co1 , co2)
+    print('sssssssssssss',sqrt(pow(abs(co1[0] - co2[0]), 2) + pow(abs(co1[1] - co2[1]), 2)))
+    return sqrt(pow(abs(co1[0] - co2[0]), 2) + pow(abs(co1[1] - co2[1]), 2))
+
+def findingMinmumTask():
+    cords =  [(455, 12), (188, 90), (74, 366), (10,10)]
+    point = (18, 448)
+    x = []
+    for c in cords:
+        dst = euclidean(c, point)
+        x.append((dst,c))
+    # closest_dst = min(euclidean(c, point) for c in cords)
+    closest = min(x,key=lambda item:item[0])
+    print(x)
+    print(closest)
 
 img = cv2.imread("./images/person2.png",1)
 # img = cv2.resize(img,(656,368))
     # SimpleBlobDetection(img)
 # SimpleBlobWithCamera()
 # houghCirclesDetection(img)
-houghCircleDetectionVideo()
+SimpleBlobWithCamera()
 cv2.waitKey(0)
