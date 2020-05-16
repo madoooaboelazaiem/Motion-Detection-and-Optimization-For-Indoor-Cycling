@@ -161,7 +161,8 @@ def SimpleBlobDetection(frame):
         keypoints_with_id.append(keypointCoordinates[i] + (keypoint_id,))
         detected_keypoints_toString.append((('X: ')+str(keypointCoordinates[i][0]))+('  Y: ')+(str(keypointCoordinates[i][1]))+' size: '+(str(keypointSizes[i]))) #Converting the x and y positions to strings
         keypoint_id += 1
-
+    keypoints_with_id = getAngleTwoPoints(keypoints_with_id)   
+    print(keypoints_with_id)
     nblobs = len(keypoints)
     # print(nblobs)
     
@@ -271,25 +272,32 @@ def houghCirclesDetection(img):
     # Blur the image to reduce noise
     img_blur = cv2.medianBlur(gray, 5)
     # Apply hough transform on the image
+    # circles = cv2.HoughCircles(img_blur, cv2.HOUGH_GRADIENT, 1, img.shape[0]/32, param1=200, param2=17, minRadius=4, maxRadius=15)
     circles = cv2.HoughCircles(img_blur, cv2.HOUGH_GRADIENT, 1, img.shape[0]/32, param1=200, param2=17, minRadius=20, maxRadius=20)
     # Draw detected circles
     blobPositions = []
     blobCoord = []
     if circles is not None:
         blobID = 1
+        print(circles)
         circles = np.uint16(np.around(circles))
+        print(circles)
         for i in circles[0, :]:
             blobPositions.append((i[0] ,i[1] , i[2],blobID))
             blobCoord.append((i[0] ,i[1]))
-            blobID = blobID + 1
             countBlobs = countBlobs + 1
             # Draw outer circle
             img = cv2.circle(img, (i[0], i[1]), i[2], (0, 255, 0), 3)
             # Draw inner circle
             img = cv2.circle(img, (i[0], i[1]), 2, (0, 0, 255), 3)
+            img = cv2.putText(img, str(blobID) ,(int(i[0]),int(i[1])),cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 100, 13), 3
+            , cv2.LINE_AA)
+            blobID = blobID + 1           
+        blobPositions = getAngleTwoPoints(blobPositions)   
+        # print(blobPositions)
         img = houghCirclesConnection(img,blobCoord)
-    print('Blobs Detected ',blobPositions)
-    print(blobPositions)
+    # print('Blobs Detected ',blobPositions)
+    # print(blobPositions)
     plt.imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
     plt.show()
     cv2.imwrite('OutputHoughCirlces.jpg', img)
@@ -523,9 +531,73 @@ def houghCircleDetectionVideoSorted():
         cv2.imshow("new Keypoints", frame)
         vid_writer.write(frame)
 
+def getAngleTwoPoints(data):
+    x = data[0][0]
+    y = data[0][1]
+    p = (x,y)
+    for i in range(len(data)):
+        # print(len(data))
+        if(i+1 < len(data)):
+            p1 = (data[i][0], data[i][1])
+            p2 = (data[i+1][0], data[i+1][1])
+            x1 = data[i][0]
+            y1 = data[i][1]
+            x2 = data[i+1][0]
+            y2 = data[i+1][1]
+            ydiff = y2-y1 if y2>y1 else y1-y2
+            # print(y1,y2,ydiff)
+            # print(ydiff)
+            xdiff = x2-x1 if x2>x1 else x1-x2
+            # print(x1,x2,xdiff)
+            slope = ydiff/xdiff
+            # slope = abs(y2-y1)/abs(x2-x1)
+            # slope = abs(p1[1]-p2[1])/abs(p1[0]-p2[0])
+            angle = 180.0 * np.arctan(slope) / np.pi
+            print('all ',p1,'    ',p2,'   ',slope,'   ',angle)
+            data[i] = (data[i]) + (angle,)
+        else:
+            p1 = (data[i][0], data[i][1])
+            x1 = data[i][0]
+            y1 = data[i][1]
+            # slope = abs(y1-y)/abs(x1-x)
+            ydiff = y-y1 if y>y1 else y1-y
+            # print(ydiff)
+            xdiff = x-x1 if x>x1 else x1-x
+            # print(xdiff)
+            slope = ydiff/xdiff
+            # slope = abs(p1[1]-p[1])/abs(p1[0]-p[0])
+            angle = 180.0 * np.arctan(slope) / np.pi
+            print('last'  ,p1,'    ',p,'   ',slope,'   ',angle)
+            data[i] = (data[i]) + (angle,)
 
+    return data
+def getAngle(a, b, c):
+    ang = math.degrees(math.atan2(c[1]-b[1], c[0]-b[0]) - math.atan2(a[1]-b[1], a[0]-b[0]))
+    return ang + 360 if ang < 0 else ang
+def angleCalculationVector(data):
+    # vector1 = [1,0,0]
+    # vector2 = [0,1,0]
 
+    # unit_vector1 = vector1 / np.linalg.norm(vector1)
+    # unit_vector2 = vector2 / np.linalg.norm(vector2)
 
+    # dot_product = np.dot(unit_vector1, unit_vector2)
+
+    # angle = np.arccos(dot_product) #angle in radian
+    firstPoint = np.array([data[0][0],data[0][1],1])
+    for i in range(len(data)):
+        print(len(data))
+        if(i+1 < len(data)):
+            vec1 = np.array([data[i][0], data[i][1], 1])
+            vec2 = np.array([data[i+1][0], data[i+1][1], 1])
+            r = vg.angle(vec1, vec2)
+            data[i] = data[i] + (r,)
+        else:
+            vec1 = np.array([data[i][0], data[i][1], 1])
+            r = vg.angle(vec1, firstPoint)
+            data[i] = data[i] + (r,)
+
+    return data
 def distance(co1, co2):
     co1 = tuple(map(int, co1))
     # print('wwwwwwwwwwwwwwwwwwwwwwwwwww',co1 , co2)
@@ -555,7 +627,7 @@ img = cv2.imread("./images/cyclingP.png",1)
 # img = cv2.resize(img,(656,368))
     # SimpleBlobDetection(img)
 # SimpleBlobWithCamera()
-# houghCirclesDetection(img)
-houghCircleDetectionVideoSorted()
+houghCirclesDetection(img)
+# houghCircleDetectionVideoSorted()
 # SimpleBlobDetection(img)
 cv2.waitKey(0)
