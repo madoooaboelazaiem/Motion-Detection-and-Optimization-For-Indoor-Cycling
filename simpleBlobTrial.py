@@ -65,7 +65,8 @@ def SimpleBlobWithCamera():
     detected_keypoints_toString = []
     keypoints_with_id = []
     keypoint_id = 1
-    keypoints = sorted(keypoints, key=lambda tup: (tup.pt[0],tup.pt[1]))
+    # keypoints = sorted(keypoints, key=lambda tup: (tup.pt[0],tup.pt[1]))
+    keypoints = sorted(keypoints, key=lambda tup: tup.pt[0])
     for keypoint in keypoints:
         keypointCoordinates.append((keypoint.pt[0],
                 keypoint.pt[1]))
@@ -89,6 +90,7 @@ def SimpleBlobWithCamera():
     for i in range(nblobs):
         # print(keypoints_with_id[i])
         cv2.putText(im_with_keypoints, str(keypoints_with_id[i][2]) ,(int(keypoints_with_id[i][0]),int(keypoints_with_id[i][1])), font, 0.5, (0, 255, 0), 2, cv2.LINE_AA)
+    
     print(nblobs, 'From Blobs')
     # print(detected_keypoints_toString)
     # cv2.imwrite('Output.jpg', frameClone)
@@ -97,6 +99,8 @@ def SimpleBlobWithCamera():
     # Show keypoints
     # im_with_keypoints=connectingBlobs(im_with_keypoints,keypoints)
     # im_with_keypoints = connectingBlobs3(im_with_keypoints,keypointCoordinates)
+    keypoints_with_id = getAngleTwoPoints(keypoints_with_id)   
+    print(keypoints_with_id)
     im_with_keypoints = connectingBlobs4(im_with_keypoints,keypointCoordinates)
 
     cv2.imshow("new Keypoints", im_with_keypoints)
@@ -409,8 +413,8 @@ def connectingBlobs4(img,pts):
     # centre = (246, 234) # This should be changed to the center of your image
     for i in range(len(pts)):
         for j in range(len(pts)):
-            if(j == int(len(pts)/2)-1):
-                j = j + 1
+            # if(j == int(len(pts)/2)-1):
+            #     j = j + 1
             if(j+1 <= i):
                 FirstPt = tuple(map(int, pts[j]))
                 pt = tuple(map(int, pts[j+1]))
@@ -549,7 +553,7 @@ def getAngleTwoPoints(data):
             # print(ydiff)
             xdiff = x2-x1 if x2>x1 else x1-x2
             # print(x1,x2,xdiff)
-            slope = ydiff/xdiff
+            slope = ydiff/xdiff if xdiff > 0 else 0
             # slope = abs(y2-y1)/abs(x2-x1)
             # slope = abs(p1[1]-p2[1])/abs(p1[0]-p2[0])
             angle = 180.0 * np.arctan(slope) / np.pi
@@ -564,7 +568,7 @@ def getAngleTwoPoints(data):
             # print(ydiff)
             xdiff = x-x1 if x>x1 else x1-x
             # print(xdiff)
-            slope = ydiff/xdiff
+            slope = ydiff/xdiff if xdiff > 0 else 0
             # slope = abs(p1[1]-p[1])/abs(p1[0]-p[0])
             angle = 180.0 * np.arctan(slope) / np.pi
             print('last'  ,p1,'    ',p,'   ',slope,'   ',angle)
@@ -626,8 +630,8 @@ def getDistances(point,data):
 img = cv2.imread("./images/cyclingP.png",1)
 # img = cv2.resize(img,(656,368))
     # SimpleBlobDetection(img)
-# SimpleBlobWithCamera()
-houghCirclesDetection(img)
+SimpleBlobWithCamera()
+# houghCirclesDetection(img)
 # houghCircleDetectionVideoSorted()
 # SimpleBlobDetection(img)
 cv2.waitKey(0)
