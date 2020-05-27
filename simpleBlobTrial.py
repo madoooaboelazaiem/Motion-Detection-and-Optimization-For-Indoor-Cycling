@@ -1,5 +1,6 @@
 import cv2
 import vg
+import math
 import numpy as np
 import matplotlib.pyplot as plt 
 from scipy.spatial.distance import euclidean
@@ -8,9 +9,11 @@ def SimpleBlobWithCamera():
    inputsource = 'output.avi'
    cap = cv2.VideoCapture(inputsource)
    hasFrame, frame = cap.read()
-   vid_writer = cv2.VideoWriter('blobLines.mp4',cv2.VideoWriter_fourcc('M','J','P','G'), 30, (frame.shape[1],frame.shape[0]))
+   vid_writer = cv2.VideoWriter('blobLines.avi',cv2.VideoWriter_fourcc('M','J','P','G'), 30, (frame.shape[1],frame.shape[0]))
    count = 0
-
+   width  = frame.shape[1] # float
+   height = frame.shape[0] # float
+   print(width,height)
    while cv2.waitKey(1) < 0:
     hasFrame, frame = cap.read()
     cap.set(cv2.CAP_PROP_POS_FRAMES, count)
@@ -85,6 +88,7 @@ def SimpleBlobWithCamera():
     nblobs = len(keypoints)
     # Draw detected blobs as red circles.
     # cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS ensures the size of the circle corresponds to the size of blob
+    im_with_keypoints = cv2.circle(frame, (int(frame.shape[1]/2), int(frame.shape[0]/2)),3,  (0, 255, 0), 3)
     im_with_keypoints = cv2.drawKeypoints(frame, keypoints, np.array([]), (0,0,255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
     font = cv2.FONT_HERSHEY_SIMPLEX
     for i in range(nblobs):
@@ -98,12 +102,15 @@ def SimpleBlobWithCamera():
     # cv2.imshow('gray',cimg)
     # Show keypoints
     # im_with_keypoints=connectingBlobs(im_with_keypoints,keypoints)
-    # im_with_keypoints = connectingBlobs3(im_with_keypoints,keypointCoordinates)
+    keypoints_with_id = getAngleWithRespectToCenter(keypoints_with_id,(frame.shape[1],frame.shape[0]))
     keypoints_with_id = getAngleTwoPoints(keypoints_with_id)   
-    print(keypoints_with_id)
+    # print(keypoints_with_id)
     im_with_keypoints = connectingBlobs4(im_with_keypoints,keypointCoordinates)
-
+    # im_with_keypoints = blobConnection(im_with_keypoints)
+    # cv2.namedWindow('new Keypoints', flags=cv2.WINDOW_GUI_NORMAL + cv2.WINDOW_AUTOSIZE)
     cv2.imshow("new Keypoints", im_with_keypoints)
+    # plt.show()
+    # plt.pause(0.0001) #Note this correction
     vid_writer.write(im_with_keypoints)
 
 def SimpleBlobDetection(frame):
@@ -156,6 +163,7 @@ def SimpleBlobDetection(frame):
     keypoints_with_id = []
     keypoint_id = 1
     keypoints = sorted(keypoints, key=lambda tup: (tup.pt[0],tup.pt[1]))
+    # keypoints = sorted(keypoints, key=lambda tup: tup.pt[1]) sorted correctly 
     for keypoint in keypoints:
         # print(keypoint)
         keypointCoordinates.append((keypoint.pt[0],
@@ -166,7 +174,7 @@ def SimpleBlobDetection(frame):
         detected_keypoints_toString.append((('X: ')+str(keypointCoordinates[i][0]))+('  Y: ')+(str(keypointCoordinates[i][1]))+' size: '+(str(keypointSizes[i]))) #Converting the x and y positions to strings
         keypoint_id += 1
     keypoints_with_id = getAngleTwoPoints(keypoints_with_id)   
-    print(keypoints_with_id)
+    # print(keypoints_with_id)
     nblobs = len(keypoints)
     # print(nblobs)
     
@@ -174,10 +182,10 @@ def SimpleBlobDetection(frame):
     # cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS ensures the size of the circle corresponds to the size of blob
     im_with_keypoints = cv2.drawKeypoints(frame, keypoints, np.array([]), (0,255,255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
     font = cv2.FONT_HERSHEY_SIMPLEX
-    x = (0,0)
-    y = (0,0)
-    z = (0,0)
-    a , b = (0,0)
+    # x = (0,0)
+    # y = (0,0)
+    # z = (0,0)
+    # a , b = (0,0)
     for i in range(nblobs):
         # print(keypoints_with_id[i])
         cv2.putText(im_with_keypoints, str(keypoints_with_id[i][2]) ,(int(keypoints_with_id[i][0]),int(keypoints_with_id[i][1])), font, 0.5, (0, 255, 0), 2, cv2.LINE_AA)
@@ -200,9 +208,10 @@ def SimpleBlobDetection(frame):
     # im_with_keypoints = blobConnection(im_with_keypoints)
     # cv2.imshow("new Keypoints", im_with_keypoints)
     im_with_keypoints = houghCirclesConnection(im_with_keypoints,keypointCoordinates)
+    # im_with_keypoints = blobConnection(im_with_keypoints)
     plt.imshow(cv2.cvtColor(im_with_keypoints, cv2.COLOR_BGR2RGB))
     plt.show()
-    cv2.imwrite('Output.jpg', im_with_keypoints)
+    cv2.imwrite('Output3.jpg', im_with_keypoints)
 def blobConnection(img):
 
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -250,6 +259,7 @@ def blobConnection(img):
         sort = sorted(secondxy, key=lambda second: second[0])
         sort = np.array(sort)
         cv2.line(img, (x1,y1), (int(sort[0,1]), int(sort[0,2])), (0,0,255), 2)
+    cv2.imshow("new Keypoints", img)
     return img
 def angleCalculation(p1,p2):
     # vector1 = [1,0,0]
@@ -283,9 +293,11 @@ def houghCirclesDetection(img):
     blobCoord = []
     if circles is not None:
         blobID = 1
-        print(circles)
+        # print(circles)
         circles = np.uint16(np.around(circles))
-        print(circles)
+        # circles = sorted(circles, key=lambda tup: tup)
+
+        # print(circles)
         for i in circles[0, :]:
             blobPositions.append((i[0] ,i[1] , i[2],blobID))
             blobCoord.append((i[0] ,i[1]))
@@ -296,7 +308,10 @@ def houghCirclesDetection(img):
             img = cv2.circle(img, (i[0], i[1]), 2, (0, 0, 255), 3)
             img = cv2.putText(img, str(blobID) ,(int(i[0]),int(i[1])),cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 100, 13), 3
             , cv2.LINE_AA)
-            blobID = blobID + 1           
+            blobID = blobID + 1   
+        blobPositions = sorted(blobPositions,key=lambda tup: tup[1],reverse=True)   
+        blobCoord = sorted(blobCoord,key=lambda tup: tup[1],reverse=True)   
+        # print(blobPositions)    
         blobPositions = getAngleTwoPoints(blobPositions)   
         # print(blobPositions)
         img = houghCirclesConnection(img,blobCoord)
@@ -346,7 +361,7 @@ def houghCircleDetectionVideo():
                 blobID = blobID + 1
             frame = houghCirclesConnection(frame,blobCoord)
         print('Blobs Detected ',countBlobs)
-        print(blobPositions)
+        # print(blobPositions)
         cv2.imshow("new Keypoints", frame)
         vid_writer.write(frame)
 def connectingBlobs(img,pts):
@@ -369,7 +384,7 @@ def connectingBlobs(img,pts):
         try:
             nearest = min(temp, key=lambda x: ((abs(x[0]-FirstPt[0]),abs(x[1]-FirstPt[1]))))
             pt = tuple(map(int, nearest))
-            print('xxxxxxxxxxxx',(pt,FirstPt),temp)
+            # print('xxxxxxxxxxxx',(pt,FirstPt),temp)
             # print(soFar)
             img = cv2.line(img=img, pt1=(FirstPt), pt2=(pt), color=(0, 0, 255), thickness = 2)
             FirstPt = pt
@@ -397,7 +412,7 @@ def connectingBlobs3(img,pts):
             try:
                 nearest = min(temp, key=lambda x: ((abs(x[0]-FirstPt[0]),abs(x[1]-FirstPt[1]))))
                 pt = tuple(map(int, nearest))
-                print('xxxxxxxxxxxx',(pt,FirstPt),temp)
+                # print('xxxxxxxxxxxx',(pt,FirstPt),temp)
                 # print(soFar)
                 img = cv2.line(img=img, pt1=(FirstPt), pt2=(pt), color=(0, 0, 255), thickness = 2)
                 FirstPt = pt
@@ -418,7 +433,7 @@ def connectingBlobs4(img,pts):
             if(j+1 <= i):
                 FirstPt = tuple(map(int, pts[j]))
                 pt = tuple(map(int, pts[j+1]))
-                print('xxxxxxxxxxxx',(pt,FirstPt))
+                # print('xxxxxxxxxxxx',(pt,FirstPt))
                 # print(soFar)
                 img = cv2.line(img=img, pt1=(FirstPt), pt2=(pt), color=(0, 0, 255), thickness = 2)
     return img
@@ -459,7 +474,7 @@ def connectingBlobs2(img,pts):
                 # print('Nearest',nearest)
                 pt = tuple(map(int, nearest[1]))
                 FirstPt = tuple(map(int, FirstPt))
-                print('xxxxxxxxxxxx',(pt,FirstPt),temp)
+                # print('xxxxxxxxxxxx',(pt,FirstPt),temp)
                 # print(soFar)
                 img = cv2.line(img=img, pt1=(FirstPt), pt2=(pt), color=(0, 0, 255), thickness = 2)
                 FirstPt = pts[j]
@@ -535,6 +550,7 @@ def houghCircleDetectionVideoSorted():
         cv2.imshow("new Keypoints", frame)
         vid_writer.write(frame)
 
+<<<<<<< HEAD
 def angle3(a,b,c):
     a = np.array([a[0],a[1] ,1])
     b = np.array([b[0], b[1],1])
@@ -546,6 +562,33 @@ def angle3(a,b,c):
     cosine_angle = np.dot(ba, bc) / (np.linalg.norm(ba) * np.linalg.norm(bc))
     angle = np.arccos(cosine_angle)*180.0/ math.pi
     return angle
+=======
+
+
+def getAngleWithRespectToCenter(data,cP):
+    x = cP[0]/2
+    y = cP[1]/2
+    p = (x,y)
+    for i in range(len(data)):
+        # print(len(data))
+        p2 = (data[i][0], data[i][1])
+        x2 = data[i][0]
+        print(x2)
+        y2 = data[i][1]
+        ydiff = y2-y if y2>y else y-y2
+        # print(y1,y2,ydiff)
+        # print(ydiff)
+        xdiff = x2-x if x2>x else x-x2
+        # print(x1,x2,xdiff)
+        slope = ydiff/xdiff if xdiff > 0 else 0
+        # slope = abs(y2-y1)/abs(x2-x1)
+        # slope = abs(p1[1]-p2[1])/abs(p1[0]-p2[0])
+        angle = 180.0 * np.arctan(slope) / np.pi
+        print('all ',p,'    ',p2,'   ',slope,'   ',angle)
+        data[i] = (data[i]) + (angle,)
+
+    return data
+>>>>>>> 5ee17c16ca48c695175856989b6ac3c2a0156d80
 def getAngleTwoPoints(data):
     x = data[0][0]
     y = data[0][1]
@@ -568,7 +611,7 @@ def getAngleTwoPoints(data):
             # slope = abs(y2-y1)/abs(x2-x1)
             # slope = abs(p1[1]-p2[1])/abs(p1[0]-p2[0])
             angle = 180.0 * np.arctan(slope) / np.pi
-            print('all ',p1,'    ',p2,'   ',slope,'   ',angle)
+            # print('all ',p1,'    ',p2,'   ',slope,'   ',angle)
             data[i] = (data[i]) + (angle,)
         else:
             p1 = (data[i][0], data[i][1])
@@ -582,7 +625,7 @@ def getAngleTwoPoints(data):
             slope = ydiff/xdiff if xdiff > 0 else 0
             # slope = abs(p1[1]-p[1])/abs(p1[0]-p[0])
             angle = 180.0 * np.arctan(slope) / np.pi
-            print('last'  ,p1,'    ',p,'   ',slope,'   ',angle)
+            # print('last'  ,p1,'    ',p,'   ',slope,'   ',angle)
             data[i] = (data[i]) + (angle,)
 
     return data
@@ -641,8 +684,9 @@ def getDistances(point,data):
 img = cv2.imread("./images/cyclingP.png",1)
 # img = cv2.resize(img,(656,368))
     # SimpleBlobDetection(img)
-SimpleBlobWithCamera()
+# blobConnection(img)
 # houghCirclesDetection(img)
 # houghCircleDetectionVideoSorted()
 # SimpleBlobDetection(img)
+SimpleBlobWithCamera()
 cv2.waitKey(0)
