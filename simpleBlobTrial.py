@@ -224,6 +224,87 @@ def houghCirclesDetection(img):
     plt.show()
     cv2.imwrite('OutputHoughCirlces.jpg', img)
 
+
+def houghCircleDetectionVideoSorted(inputsource):
+   cap = cv2.VideoCapture(inputsource)
+   hasFrame, frame = cap.read()
+   vid_writer = cv2.VideoWriter('outputHough2.mp4',cv2.VideoWriter_fourcc('M','J','P','G'), 30, (frame.shape[1],frame.shape[0]))
+   count = 0
+
+   while cv2.waitKey(1) < 0:
+        hasFrame, frame = cap.read()
+        cap.set(cv2.CAP_PROP_POS_FRAMES, count)
+        count = count + 4 # For Skipping Frames
+        if not hasFrame:
+            cv2.waitKey()
+            break
+        countBlobs = 0
+        # Read image as gray-scale
+        # Convert to gray-scale
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        # Blur the image to reduce noise
+        img_blur = cv2.medianBlur(gray, 5)
+        # Apply hough transform on the image
+        # Default circles = cv2.HoughCircles(img_blur, cv2.HOUGH_GRADIENT, 1, img.shape[0]/32, param1=200, param2=17, minRadius=20, maxRadius=20)
+        circles = cv2.HoughCircles(img_blur, cv2.HOUGH_GRADIENT, 1, img.shape[0]/64, param1=200, param2=20, minRadius=6, maxRadius=5)
+        # Draw detected circles
+        # print(circles)
+        # circles = sorted(circles, key=lambda tup: tup)
+        # print(circles[0])  
+        if circles is not None:
+            blobPositions = []
+            blobCoord = []
+            blobID = 1
+            circles = np.uint16(np.around(circles))
+            for i in circles[0, :]:
+                blobPositions.append((i[0] ,i[1] , i[2]))
+                countBlobs = countBlobs + 1
+                # Draw outer circle
+                cv2.circle(frame, (i[0], i[1]), i[2], (0, 255, 0), 2)
+                # print('colored')
+                # Draw inner circle
+                cv2.circle(frame, (i[0], i[1]), 2, (0, 0, 255), 3)
+            blobPositions = sorted(blobPositions , key=lambda k: k[1],reverse = True)
+            nBlobs = 1
+            newCoord = []
+            for i in range(len(blobPositions)):
+                newCoord.append((blobPositions[i][0],blobPositions[i][1],nBlobs))
+                nBlobs = nBlobs + 1
+            blobPositions = newCoord
+            print('mado',blobPositions)
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            for i in range(countBlobs):
+                # print(blobPositions[i])
+                cv2.putText(frame, str(blobPositions[i][2]) ,(int(blobPositions[i][0]),int(blobPositions[i][1])), font, 2, (255, 0, 0), 3, cv2.LINE_AA)
+            angle = angleCalculation(blobPositions)
+            pos = 30
+            for i in range(len(angle)):
+                cv2.putText(frame, 'Angle of point '+str(angle[i][2])+' is ' +str(round((angle[i][3]),2)) ,(100,pos), font, 1, (255, 255, 255), 3, cv2.LINE_AA)
+                pos= pos +30
+            #blobCoord = sorted(blobCoord, key=lambda tup: (tup[0],tup[1]))
+            #frame = houghCirclesConnection(frame,blobCoord)
+            print('Blobs Detected ',countBlobs)
+            # print(blobPositions)
+        cv2.imshow("new Keypoints", frame)
+        vid_writer.write(frame)
+
+def houghCirclesConnection(img,pts):
+    # pts = [k.pt for k in keypoints]#Opencv can't draw an arrow between a single point center and a list of points. So we'll have to go over it in a for loop as such
+    # max(pts,key=lambda item:item[1])
+    # print('points',pts)
+    #max(lis,key=lambda item:item[1])
+    # nearest = min(cooList, key=lambda x: distance(x, coordinate))
+    # centre = (246, 234) # This should be changed to the center of your image
+    for i in range(len(pts)):
+        for j in range(len(pts)):
+            if(j+1 <= i):
+                FirstPt = tuple(map(int, pts[j]))
+                pt = tuple(map(int, pts[j+1]))
+                # print('xxxxxxxxxxxx',(pt,FirstPt))
+                # print(soFar)
+                img = cv2.line(img=img, pt1=(FirstPt), pt2=(pt), color=(0, 255, 255), thickness = 2)
+    return img
+
 def dotproduct(v1, v2):
   return sum((a*b) for a, b in zip(v1, v2))
 def angle3(a,b,c):
@@ -278,8 +359,10 @@ def angleCalculation(data):
     return newData
 
 img = cv2.imread("./images/cyclingP.png",1)
+inputSource = 'Video_2_EDIT.mp4'
 # img = cv2.resize(img,(656,368))
     # SimpleBlobDetection(img)
 # SimpleBlobDetection(img)
-houghCirclesDetection(img)
+# houghCirclesDetection(img)
+houghCircleDetectionVideoSorted(inputSource)
 cv2.waitKey(0)
