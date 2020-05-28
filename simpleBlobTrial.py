@@ -550,7 +550,6 @@ def houghCircleDetectionVideoSorted():
         cv2.imshow("new Keypoints", frame)
         vid_writer.write(frame)
 
-<<<<<<< HEAD
 def angle3(a,b,c):
     a = np.array([a[0],a[1] ,1])
     b = np.array([b[0], b[1],1])
@@ -562,7 +561,6 @@ def angle3(a,b,c):
     cosine_angle = np.dot(ba, bc) / (np.linalg.norm(ba) * np.linalg.norm(bc))
     angle = np.arccos(cosine_angle)*180.0/ math.pi
     return angle
-=======
 
 
 def getAngleWithRespectToCenter(data,cP):
@@ -588,7 +586,6 @@ def getAngleWithRespectToCenter(data,cP):
         data[i] = (data[i]) + (angle,)
 
     return data
->>>>>>> 5ee17c16ca48c695175856989b6ac3c2a0156d80
 def getAngleTwoPoints(data):
     x = data[0][0]
     y = data[0][1]
