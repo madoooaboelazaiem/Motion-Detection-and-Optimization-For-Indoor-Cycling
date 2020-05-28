@@ -3,9 +3,8 @@ import vg
 import math
 import numpy as np
 import matplotlib.pyplot as plt 
-def SimpleBlobWithCamera():
-   inputsource = 'output.avi'
-   cap = cv2.VideoCapture(inputsource)
+def SimpleBlobWithCamera(inputSource):
+   cap = cv2.VideoCapture(inputSource)
    hasFrame, frame = cap.read()
    vid_writer = cv2.VideoWriter('output2.mp4',cv2.VideoWriter_fourcc('M','J','P','G'), 30, (frame.shape[1],frame.shape[0]))
    count = 0
@@ -13,7 +12,7 @@ def SimpleBlobWithCamera():
    while cv2.waitKey(1) < 0:
     hasFrame, frame = cap.read()
     cap.set(cv2.CAP_PROP_POS_FRAMES, count)
-    count = count + 2 # For Skipping Frames
+    count = count + 4 # For Skipping Frames
     if not hasFrame:
         cv2.waitKey()
         break
@@ -364,5 +363,6 @@ inputSource = 'Video_2_EDIT.mp4'
     # SimpleBlobDetection(img)
 # SimpleBlobDetection(img)
 # houghCirclesDetection(img)
+# SimpleBlobWithCamera(inputSource)
 houghCircleDetectionVideoSorted(inputSource)
 cv2.waitKey(0)
