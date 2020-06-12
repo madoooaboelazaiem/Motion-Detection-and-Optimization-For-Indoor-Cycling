@@ -8,6 +8,9 @@ from collections import deque
 from imutils.video import VideoStream
 from argparse import ArgumentParser
 import time
+import pandas as pd
+from csv import DictWriter
+import threading
 
 
 def SquareBlobDetectorT1(inputSource):
@@ -595,6 +598,7 @@ def angleCalculation2(p1, p2):
 
 def angleCalculation(data):
     newData = []
+    # threading.Timer(1.0, angleCalculation).start()
     for i in range(len(data)):
         newCord = []
         if(i+2 < len(data)):
@@ -656,10 +660,11 @@ def find_squares(inputSource):
 def findBlobVid(inputSource):
     cap = cv2.VideoCapture(inputSource)
     hasFrame, frame = cap.read()
-    vid_writer = cv2.VideoWriter('outputSquare.mp4', cv2.VideoWriter_fourcc(
-        'M', 'J', 'P', 'G'), 30, (frame.shape[1], frame.shape[0]))
+    fourcc = cv2.VideoWriter_fourcc(*'MPEG')
+    vid_writer = cv2.VideoWriter('outputSquare2.avi',fourcc, 30, (900, 600))
     count = 0
-
+    df = pd.DataFrame(columns=['1','2','3','4','5','6','7','8','9'])
+    # df.to_csv('data.csv') 
     while cv2.waitKey(1) < 0:
         hasFrame, frame = cap.read()
         frame = cv2.resize(frame, (900, 600))
@@ -671,7 +676,7 @@ def findBlobVid(inputSource):
         thresh = cv2.threshold(sharpen, 127, 255, cv2.THRESH_BINARY_INV)[1]
         # print('fpsssssssssssssssss', cv2.CAP_PROP_POS_FRAMES)
         cap.set(cv2.CAP_PROP_POS_FRAMES, count)
-        count = count + 0.1  # For Skipping Frames
+        count = count + 0.5  # For Skipping Frames
         if not hasFrame:
             cv2.waitKey()
             break
@@ -726,6 +731,7 @@ def findBlobVid(inputSource):
         detected_keypoints_toString = []
         detected_keypoints = []
         keypoints_with_id = []
+        angle_arr = []
         keypoint_id = 1
         for keypoint in keypoints:
             blobPosition = (
@@ -752,7 +758,7 @@ def findBlobVid(inputSource):
             cv2.putText(im_with_keypoints, str(keypoints_with_id[i][4]), (int(keypoints_with_id[i][0]), int(
                 keypoints_with_id[i][1])), font, 0.5, (0, 255, 0), 2, cv2.LINE_AA)
         angle = angleCalculation(blobPositions)
-        print(angle)
+        # print(angle)
         pos = 30
         for i in range(len(angle)):
             print(len(angle))
@@ -765,11 +771,26 @@ def findBlobVid(inputSource):
         # cv2.imshow('gray',cimg)
         # Show keypoints
         # im_with_keypoints = blobConnection(im_with_keypoints)
+        field_names = []
+        row_dict = {}
+        for i in range(len(angle)):
+            col = str(angle[i][2])
+            field_names.append(col)
+            row_dict[col] = angle[i][3]
+ 
+            # Append a dict as a row in csv file
+        df = addRow(df,row_dict)
         cv2.imshow("thresh", thresh)
         cv2.imshow("new Keypoints", im_with_keypoints)
         vid_writer.write(im_with_keypoints)
 
-
+def addRow(df,row_dict):
+    threading.Timer(1.0, addRow).start()
+    df = df.append(row_dict, ignore_index=True)
+    print(row_dict)
+    # append_dict_as_row('data.csv', row_dict, field_names)
+    df.to_csv('data.csv') 
+    return df
 def findBlobs(inputSource):
     cap = cv2.VideoCapture(inputSource)
     hasFrame, image = cap.read()
@@ -855,6 +876,17 @@ def findBlobs(inputSource):
     cv2.imshow('image', im_with_keypoints)
     cv2.waitKey()
 
+
+
+
+ 
+def append_dict_as_row(file_name, dict_of_elem, field_names):
+    # Open file in append mode
+    with open(file_name, 'a+', newline='') as write_obj:
+        # Create a writer object from csv module
+        dict_writer = DictWriter(write_obj, fieldnames=field_names)
+        # Add dictionary as wor in the csv
+        dict_writer.writerow(dict_of_elem)
 
 img = cv2.imread("./images/cyclingP.png", 1)
 inputSource = 'pedalTest2.MOV'
