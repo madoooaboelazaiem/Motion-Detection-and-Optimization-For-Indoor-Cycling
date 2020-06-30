@@ -88,19 +88,19 @@ def SquareBlobDetectorT2(inputSource):
     cv2.imshow('image', image)
     cv2.waitKey()
 
-
-def SimpleBlobWithCameraV2(inputSource):
+#Best Accuracy for test2Crop
+def SimpleBlobWithCameraVtest2Crop(inputSource):
     cap = cv2.VideoCapture(inputSource)
     hasFrame, frame = cap.read()
-    vid_writer = cv2.VideoWriter('output233.mp4', cv2.VideoWriter_fourcc(
+    vid_writer = cv2.VideoWriter('temp.mp4', cv2.VideoWriter_fourcc(
         'M', 'J', 'P', 'G'), 30, (frame.shape[1], frame.shape[0]))
     count = 0
 
     while cv2.waitKey(1) < 0:
         hasFrame, frame = cap.read()
         # print('fpsssssssssssssssss', cv2.CAP_PROP_POS_FRAMES)
-        cap.set(cv2.CAP_PROP_POS_FRAMES, count)
-        count = count + 0.5  # For Skipping Frames
+        # cap.set(cv2.CAP_PROP_POS_FRAMES, count)
+        # count = count  # For Skipping Frames
         if not hasFrame:
             cv2.waitKey()
             break
@@ -109,13 +109,14 @@ def SimpleBlobWithCameraV2(inputSource):
         sharpen_kernel = np.array([[-1, -1, -1], [-1, 9, -1], [-1, -1, -1]])
         sharpen = cv2.filter2D(blur, -1, sharpen_kernel)
 
-        edgeDetectedImage = cv2.threshold(sharpen,100, 256, cv2.THRESH_BINARY_INV)[1]
-        # cv2.imshow('Edge Detected Image', edgeDetectedImage)
+        edgeDetectedImage = cv2.threshold(sharpen,110, 256, cv2.THRESH_BINARY_INV)[1]
+        
+        cv2.imshow('Edge Detected Image', edgeDetectedImage)
         params = cv2.SimpleBlobDetector_Params()
         # im = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
+        cv2.imshow('s',edgeDetectedImage)
         # Change thresholds
-        params.minThreshold = 40
+        params.minThreshold = 30
         params.maxThreshold = 256
 
         # Filter by Color
@@ -125,21 +126,138 @@ def SimpleBlobWithCameraV2(inputSource):
 
         # Filter by Area.
         params.filterByArea = True
-        params.minArea = 800        
-        # params.minArea = 130
-        params.maxArea = 1800
+        params.minArea = 700        
+        # params.minArea = 230
+        params.maxArea = 1770
 
         # Filter by Circularity
         params.filterByCircularity = True
+        # params.minCircularity = 0.4
         params.minCircularity = 0.2
 
         # Filter by Convexity
         params.filterByConvexity = True
+        # params.minConvexity = 0.3
+        params.minConvexity = 0.2
+
+        # Filter by Inertia
+        params.filterByInertia = True
+        params.minInertiaRatio = 0.22
+        # params.minInertiaRatio = 0.5
+
+
+        # # Create a detector with the parameters
+        # ver = (cv2.__version__).split('.')
+        # if int(ver[0]) < 3 :
+        # 	detector = cv2.SimpleBlobDetector(params)
+        # else :
+        # 	detector = cv2.SimpleBlobDetector_create(params)
+
+        # Auto Scale Detector
+        detector = cv2.SimpleBlobDetector_create(params)
+
+        # Detect blobs.
+        keypoints = detector.detect(edgeDetectedImage)
+        blobPosition = []
+        keypointCoordinates = []
+        detected_keypoints_toString = []
+        detected_keypoints = []
+        keypoints_with_id = []
+        keypoint_id = 1
+        for keypoint in keypoints:
+            blobPosition = (
+                keypoint.pt[0],
+                keypoint.pt[1],
+                keypoint.size,
+                keypoint.angle)
+            keypointCoordinates.append(blobPosition)
+        keypointCoordinates = sorted(
+                keypointCoordinates, key=lambda k: (k[1],k[0]), reverse=True)
+        for i in range(len(keypoints)):
+            keypoints_with_id.append(keypointCoordinates[i] + (keypoint_id,))
+            detected_keypoints_toString.append((('X: ')+str(keypointCoordinates[i][0]))+('  Y: ')+(str(keypointCoordinates[i][1]))+' size: '+(
+                str(keypointCoordinates[i][2]))+' angle: '+(str(keypointCoordinates[i][3])))  # Converting the x and y positions to strings
+            keypoint_id += 1
+
+        nblobs = len(keypoints)
+        # Draw detected blobs as red circles.
+        # cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS ensures the size of the circle corresponds to the size of blob
+        # for curKey in keypointCoordinates:
+        #     frame = cv2.circle(frame,(int(curKey[0]),int(curKey[1])),int(curKey[2]/2),(0, 0, 0), 10)
+        # im_with_keypoints = frame 
+        im_with_keypoints = cv2.drawKeypoints(frame, keypoints, np.array(
+            []), (0, 0, 255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        for i in range(nblobs):
+            print(keypoints_with_id[i])
+            cv2.putText(im_with_keypoints, str(keypoints_with_id[i][4]), (int(keypoints_with_id[i][0]), int(
+                keypoints_with_id[i][1])), font, 0.5, (0, 255, 0), 2, cv2.LINE_AA)
+
+        print(nblobs, 'From Blobs')
+        # print(detected_keypoints_toString)
+        # cv2.imwrite('Output.jpg', frameClone)
+        # cimg = cv2.imread('Output.jpg',0)
+        # cv2.imshow('gray',cimg)
+        # Show keypoints
+        # im_with_keypoints = blobConnection(im_with_keypoints)
+        cv2.imshow("new Keypoints", im_with_keypoints)
+        vid_writer.write(im_with_keypoints)
+
+def SimpleBlobWithCameraV2(inputSource):
+    cap = cv2.VideoCapture(inputSource)
+    hasFrame, frame = cap.read()
+    vid_writer = cv2.VideoWriter('test1.mp4', cv2.VideoWriter_fourcc(
+        'M', 'J', 'P', 'G'), 30, (frame.shape[1], frame.shape[0]))
+    count = 0
+
+    while cv2.waitKey(1) < 0:
+        hasFrame, frame = cap.read()
+        # print('fpsssssssssssssssss', cv2.CAP_PROP_POS_FRAMES)
+        # cap.set(cv2.CAP_PROP_POS_FRAMES, count)
+        # count = count  # For Skipping Frames
+        if not hasFrame:
+            cv2.waitKey()
+            break
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        blur = cv2.medianBlur(gray, 5)
+        sharpen_kernel = np.array([[-1, -1, -1], [-1, 9, -1], [-1, -1, -1]])
+        sharpen = cv2.filter2D(blur, -1, sharpen_kernel)
+
+        edgeDetectedImage = cv2.threshold(sharpen,190, 256, cv2.THRESH_BINARY_INV)[1]
+        # cv2.imshow('Edge Detected Image', edgeDetectedImage)
+        params = cv2.SimpleBlobDetector_Params()
+        # im = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        cv2.imshow('s',edgeDetectedImage)
+        # Change thresholds
+        params.minThreshold = 1
+        params.maxThreshold = 256
+
+        # Filter by Color
+
+        params.filterByColor = False
+        params.blobColor = 0  # for black
+
+        # Filter by Area.
+        params.filterByArea = True
+        params.minArea = 800        
+        # params.minArea = 230
+        # params.maxArea = 1000
+
+        # Filter by Circularity
+        params.filterByCircularity = True
+        # params.minCircularity = 0.4
+        params.minCircularity = 0.2
+
+        # Filter by Convexity
+        params.filterByConvexity = True
+        # params.minConvexity = 0.3
         params.minConvexity = 0.2
 
         # Filter by Inertia
         params.filterByInertia = True
         params.minInertiaRatio = 0.25
+        # params.minInertiaRatio = 0.5
+
 
         # # Create a detector with the parameters
         # ver = (cv2.__version__).split('.')
@@ -201,15 +319,15 @@ def SimpleBlobWithCameraV2(inputSource):
 def SimpleBlobWithCameraV1(inputSource):
     cap = cv2.VideoCapture(inputSource)
     hasFrame, frame = cap.read()
-    vid_writer = cv2.VideoWriter('output233.mp4', cv2.VideoWriter_fourcc(
+    vid_writer = cv2.VideoWriter('test1.mp4', cv2.VideoWriter_fourcc(
         'M', 'J', 'P', 'G'), 30, (frame.shape[1], frame.shape[0]))
     count = 0
 
-    while cv2.waitKey(1) < 0:
+    while cv2.waitKey(50) < 0:
         hasFrame, frame = cap.read()
         # print('fpsssssssssssssssss', cv2.CAP_PROP_POS_FRAMES)
-        cap.set(cv2.CAP_PROP_POS_FRAMES, count)
-        count = count + 0.5  # For Skipping Frames
+        # cap.set(cv2.CAP_PROP_POS_FRAMES, count)
+        # count = count + 0.5  # For Skipping Frames
         if not hasFrame:
             cv2.waitKey()
             break
@@ -233,7 +351,7 @@ def SimpleBlobWithCameraV1(inputSource):
 
         # Filter by Area.
         params.filterByArea = True
-        params.minArea = 800        
+        params.minArea = 400        
         # params.minArea = 130
         params.maxArea = 1000
 
@@ -303,6 +421,119 @@ def SimpleBlobWithCameraV1(inputSource):
         cv2.imshow("new Keypoints", im_with_keypoints)
         vid_writer.write(im_with_keypoints)
 
+def SimpleBlobWithCameraV3(inputSource):
+    cap = cv2.VideoCapture(inputSource)
+    hasFrame, frame = cap.read()
+    vid_writer = cv2.VideoWriter('test1.mp4', cv2.VideoWriter_fourcc(
+        'M', 'J', 'P', 'G'), 30, (frame.shape[1], frame.shape[0]))
+    count = 0
+
+    while cv2.waitKey(50) < 0:
+        hasFrame, frame = cap.read()
+        # print('fpsssssssssssssssss', cv2.CAP_PROP_POS_FRAMES)
+        # cap.set(cv2.CAP_PROP_POS_FRAMES, count)
+        # count = count  # For Skipping Frames
+        if not hasFrame:
+            cv2.waitKey()
+            break
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        # blur = cv2.medianBlur(gray, 5)
+        # edgeDetectedImage = cv2.Canny(blur, 60, 100)
+        # sharpen_kernel = np.array([[-1, -1, -1], [-1, 9, -1], [-1, -1, -1]])
+        # edgeDetectedImage = cv2.filter2D(gray, -1, sharpen_kernel)
+
+        # edgeDetectedImage = cv2.threshold(sharpen,150, 256, cv2.THRESH_BINARY_INV)[1]
+        # cv2.imshow('Edge Detected Image', edgeDetectedImage)
+        params = cv2.SimpleBlobDetector_Params()
+        # im = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        # cv2.imshow('s',gray)
+        # Change thresholds
+        params.minThreshold = 1
+        params.maxThreshold = 256
+
+        # Filter by Color
+
+        params.filterByColor = False
+        params.blobColor = 0  # for black
+
+        # Filter by Area.
+        params.filterByArea = True
+        # params.minArea = 800        
+        params.minArea = 90
+        params.maxArea = 600
+
+        # Filter by Circularity
+        params.filterByCircularity = True
+        params.minCircularity = 0.72
+        # params.minCircularity = 0.2
+
+        # Filter by Convexity
+        params.filterByConvexity = True
+        params.minConvexity = 0.3
+        # params.minConvexity = 0.2
+
+        # Filter by Inertia
+        params.filterByInertia = True
+        # params.minInertiaRatio = 0.25
+        params.minInertiaRatio = 0.3
+
+
+        # # Create a detector with the parameters
+        # ver = (cv2.__version__).split('.')
+        # if int(ver[0]) < 3 :
+        # 	detector = cv2.SimpleBlobDetector(params)
+        # else :
+        # 	detector = cv2.SimpleBlobDetector_create(params)
+
+        # Auto Scale Detector
+        detector = cv2.SimpleBlobDetector_create(params)
+
+        # Detect blobs.
+        keypoints = detector.detect(frame)
+        blobPosition = []
+        keypointCoordinates = []
+        detected_keypoints_toString = []
+        detected_keypoints = []
+        keypoints_with_id = []
+        keypoint_id = 1
+        for keypoint in keypoints:
+            blobPosition = (
+                keypoint.pt[0],
+                keypoint.pt[1],
+                keypoint.size,
+                keypoint.angle)
+            keypointCoordinates.append(blobPosition)
+        keypointCoordinates = sorted(
+                keypointCoordinates, key=lambda k: (k[1],k[0]), reverse=True)
+        for i in range(len(keypoints)):
+            keypoints_with_id.append(keypointCoordinates[i] + (keypoint_id,))
+            detected_keypoints_toString.append((('X: ')+str(keypointCoordinates[i][0]))+('  Y: ')+(str(keypointCoordinates[i][1]))+' size: '+(
+                str(keypointCoordinates[i][2]))+' angle: '+(str(keypointCoordinates[i][3])))  # Converting the x and y positions to strings
+            keypoint_id += 1
+
+        nblobs = len(keypoints)
+        # Draw detected blobs as red circles.
+        # cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS ensures the size of the circle corresponds to the size of blob
+        # for curKey in keypointCoordinates:
+        #     frame = cv2.circle(frame,(int(curKey[0]),int(curKey[1])),int(curKey[2]/2),(0, 0, 0), 10)
+        # im_with_keypoints = frame 
+        im_with_keypoints = cv2.drawKeypoints(frame, keypoints, np.array(
+            []), (255, 0, 255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        for i in range(nblobs):
+            print(keypoints_with_id[i])
+            cv2.putText(im_with_keypoints, str(keypoints_with_id[i][4]), (int(keypoints_with_id[i][0]), int(
+                keypoints_with_id[i][1])), font, 0.5, (0, 255, 124), 4, cv2.LINE_AA)
+
+        print(nblobs, 'From Blobs')
+        # print(detected_keypoints_toString)
+        # cv2.imwrite('Output.jpg', frameClone)
+        # cimg = cv2.imread('Output.jpg',0)
+        # cv2.imshow('gray',cimg)
+        # Show keypoints
+        # im_with_keypoints = blobConnection(im_with_keypoints)
+        cv2.imshow("new Keypoints", im_with_keypoints)
+        vid_writer.write(im_with_keypoints)
 
 
 def SimpleBlobDetection(frame):
@@ -450,20 +681,20 @@ def houghCirclesDetection(img):
 
 
 def houghCircleDetectionVideoSorted(inputsource):
-    cap = cv2.VideoCapture(inputsource)
+    cap = cv2.VideoCapture(inputSource)
     hasFrame, frame = cap.read()
     #(frame.shape[1], frame.shape[0])
-    vid_writer = cv2.VideoWriter('outputHough22.mp4', cv2.VideoWriter_fourcc(
+    vid_writer = cv2.VideoWriter('test1.mp4', cv2.VideoWriter_fourcc(
         'M', 'J', 'P', 'G'), 30, (frame.shape[1], frame.shape[0]))
     count = 0
 
-    while cv2.waitKey(1) < 0:
+    while cv2.waitKey(50) < 0:
         hasFrame, frame = cap.read()
         fps = cap.get(cv2.cv2.CAP_PROP_POS_FRAMES)
         # frame = cv2.resize(frame, (800,700))
         # print('fpsssssssssssssssss', fps)
-        cap.set(cv2.CAP_PROP_POS_FRAMES, count)
-        count = count + 0.5  # For Skipping Frames
+        # cap.set(cv2.CAP_PROP_POS_FRAMES, count)
+        # count = count  # For Skipping Frames
         if not hasFrame:
             cv2.waitKey()
             break
@@ -474,12 +705,14 @@ def houghCircleDetectionVideoSorted(inputsource):
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         # Blur the image to reduce noise
         img_blur = cv2.medianBlur(gray, 5)
+        sharpen_kernel = np.array([[-1, -1, -1], [-1, 9, -1], [-1, -1, -1]])
+        img_blur = cv2.filter2D(img_blur, -1, sharpen_kernel)
         cv2.imshow('s,',img_blur)
         # Apply hough transform on the image
         # Default circles = cv2.HoughCircles(img_blur, cv2.HOUGH_GRADIENT, 1, img.shape[0]/32, param1=200, param2=17, minRadius=20, maxRadius=20)
         # circles = cv2.HoughCircles(img_blur, cv2.HOUGH_GRADIENT, 1, img.shape[0]/64, param1=200, param2=18, minRadius=7, maxRadius=7)
         circles = cv2.HoughCircles(img_blur, cv2.HOUGH_GRADIENT, 1,
-                                   img.shape[0]/32, param1=200, param2=17, minRadius=7, maxRadius=10)
+                                   img.shape[0]/32, param1=200, param2=17, minRadius=7, maxRadius=13)
         # Draw detected circles
         # print(circles)
         # circles = sorted(circles, key=lambda tup: tup)
@@ -998,7 +1231,7 @@ def findBlobs(inputSource):
     # Filter by Area.
     # Working minArea = 70
     params.filterByArea = True
-    params.minArea = 140
+    params.minArea = 240
     # params.maxArea = 80
 
     # Filter by Circularity
@@ -1072,11 +1305,11 @@ def append_dict_as_row(file_name, dict_of_elem, field_names):
         dict_writer.writerow(dict_of_elem)
 
 img = cv2.imread("./images/cyclingP.png", 1)
-inputSource = 'test2.mp4'
+inputSource = 'pedaltest2crop.mp4'
 # img = cv2.resize(img,(656,368))
 # SimpleBlobDetection(img)
 # SimpleBlobDetection(img)
-houghCirclesDetection(img)
+SimpleBlobWithCameraVtest2Crop(inputSource)
 # blobDetLive(inputSource)
 # findBlobVid(inputSource)
 # SimpleBlobWithCameraV1(inputSource)
