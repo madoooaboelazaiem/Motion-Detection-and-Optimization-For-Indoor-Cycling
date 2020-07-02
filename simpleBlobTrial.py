@@ -540,12 +540,15 @@ def SimpleBlobWithCameraV3(inputSource): ## Big white blob = 23.x so area 530 ma
         vid_writer.write(im_with_keypoints)
 def SimpleBlobWithCameraV4(inputSource): # Best Performance ## Big white blob = 23.x so area 530 make it 540 Small one 18 equals 324
     cap = cv2.VideoCapture(inputSource)
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    print('fps',fps)
     hasFrame, frame = cap.read()
     vid_writer = cv2.VideoWriter('temp.mp4', cv2.VideoWriter_fourcc(
         'M', 'J', 'P', 'G'), 30, (frame.shape[1], frame.shape[0]))
     count = 0
+    df = pd.DataFrame(columns=['1','2','3','4','5','6'])
     # print(frame.shape[1], frame.shape[0])
-    while cv2.waitKey(50) < 0:
+    while cv2.waitKey(1) < 0:
         hasFrame, frame = cap.read()
         # print('fpsssssssssssssssss', cv2.CAP_PROP_POS_FRAMES)
         # cap.set(cv2.CAP_PROP_POS_FRAMES, count)
@@ -623,15 +626,14 @@ def SimpleBlobWithCameraV4(inputSource): # Best Performance ## Big white blob = 
             blobPosition = (
                 keypoint.pt[0],
                 keypoint.pt[1],
-                keypoint.size,
-                keypoint.angle)
+                keypoint.size)
             keypointCoordinates.append(blobPosition)
         keypointCoordinates = sorted(
                 keypointCoordinates, key=lambda k: (k[1],k[0]), reverse=True)
         for i in range(len(keypoints)):
             keypoints_with_id.append(keypointCoordinates[i] + (keypoint_id,))
             detected_keypoints_toString.append((('X: ')+str(keypointCoordinates[i][0]))+('  Y: ')+(str(keypointCoordinates[i][1]))+' size: '+(
-                str(keypointCoordinates[i][2]))+' angle: '+(str(keypointCoordinates[i][3])))  # Converting the x and y positions to strings
+                str(keypointCoordinates[i][2])))  # Converting the x and y positions to strings
             keypoint_id += 1
 
         nblobs = len(keypoints)
@@ -645,9 +647,15 @@ def SimpleBlobWithCameraV4(inputSource): # Best Performance ## Big white blob = 
         font = cv2.FONT_HERSHEY_SIMPLEX
         for i in range(nblobs):
             print(keypoints_with_id[i])
-            cv2.putText(im_with_keypoints, str(keypoints_with_id[i][4]), (int(keypoints_with_id[i][0]), int(
+            cv2.putText(im_with_keypoints, str(keypoints_with_id[i][3]), (int(keypoints_with_id[i][0]), int(
                 keypoints_with_id[i][1])), font, 0.5, (0, 255, 124), 4, cv2.LINE_AA)
-
+        # print('keu',keypoints_with_id)
+        angle = angleCalculationSimple(keypoints_with_id)
+        pos = 30
+        for i in range(len(angle)):
+            cv2.putText(frame, 'Angle of point '+str(angle[i][2])+' is ' + str(
+                round((angle[i][3]), 2)), (100, pos), font, 1, (255, 255, 255), 3, cv2.LINE_AA)
+            pos = pos + 30
         print(nblobs, 'From Blobs')
         # print(detected_keypoints_toString)
         # cv2.imwrite('Output.jpg', frameClone)
@@ -655,6 +663,23 @@ def SimpleBlobWithCameraV4(inputSource): # Best Performance ## Big white blob = 
         # cv2.imshow('gray',cimg)
         # Show keypoints
         # im_with_keypoints = blobConnection(im_with_keypoints)
+        if count%30 == 0 :
+            print('count',count)
+            field_names = []
+            row_dict = {}
+            for i in range(len(angle)):
+                # print('anglle',angle)
+                col = str(angle[i][3])
+                # print('col',col)
+                field_names.append(col)
+                row_dict[col] = angle[i][4]
+                # print('row,',row_dict[col])
+    
+                # Append a dict as a row in csv file
+            df = addRow(df,row_dict)
+            print(df)  
+        count+=1
+        
         cv2.imshow("new Keypoints", im_with_keypoints)
         vid_writer.write(im_with_keypoints)
 
@@ -1108,7 +1133,29 @@ def angleCalculation(data):
             # data[i+1] = newCord
             print('angleeee', angle)
     return newData
-
+def angleCalculationSimple(data):
+    newData = []
+    # threading.Timer(1.0, angleCalculation).start()
+    for i in range(len(data)):
+        newCord = []
+        if(i+2 < len(data)):
+            print(i+2, len(data))
+            p1 = (data[i][0], data[i][1])
+            p2 = (data[i+1][0], data[i+1][1])
+            p3 = (data[i+2][0], data[i+2][1])
+            p21x = p1[0] - p2[0] if p1[0] > p2[0] else p2[0] - p1[0]
+            p21y = p1[1]-p2[1] if p1[1] > p2[1] else p2[1] - p1[1]
+            p21 = (p21x, p21y)
+            p23x = p3[0] - p2[0] if p3[0] > p2[0] else p2[0] - p3[0]
+            p23y = p3[1]-p2[1] if p3[1] > p2[1] else p2[1] - p3[1]
+            p23 = (p23x, p23y)
+            # angle = angleCalculation2(p21,p23)
+            angle = angle3(p1, p2, p3)
+            newData.append((data[i+1][0], data[i+1][1], data[i+1][2],data[i+1][3], angle))
+            # newData.append((data[i][0],data[i][1]))
+            # data[i+1] = newCord
+            print('angleeee', angle)
+    return newData
 def angleCalculationV2(data):
     newData = []
     p1 = (data[0][0], data[0][1])
@@ -1326,9 +1373,9 @@ def findBlobVid(inputSource):
         vid_writer.write(im_with_keypoints)
 
 def addRow(df,row_dict):
-    threading.Timer(1.0, addRow).start()
+    # threading.Timer(1.0, addRow).start()
     df = df.append(row_dict, ignore_index=True)
-    print(row_dict)
+    # print(row_dict)
     # append_dict_as_row('data.csv', row_dict, field_names)
     df.to_csv('data.csv') 
     return df
