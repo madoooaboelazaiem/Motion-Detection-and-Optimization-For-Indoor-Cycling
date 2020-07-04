@@ -539,7 +539,7 @@ def SimpleBlobWithCameraV3(inputSource): ## Big white blob = 23.x so area 530 ma
         cv2.imshow("new Keypoints", im_with_keypoints)
         vid_writer.write(im_with_keypoints)
 def SimpleBlobWithCameraV4(inputSource): # Best Performance ## Big white blob = 23.x so area 530 make it 540 Small one 18 equals 324
-    cap = cv2.VideoCapture(2)
+    cap = cv2.VideoCapture(inputSource)
     fps = cap.get(cv2.CAP_PROP_FPS)
     print('fps',fps)
     hasFrame, frame = cap.read()
@@ -574,7 +574,7 @@ def SimpleBlobWithCameraV4(inputSource): # Best Performance ## Big white blob = 
         # im = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         # cv2.imshow('s',gray)
         # Change thresholds
-        params.minThreshold = 1
+        params.minThreshold = 20
         params.maxThreshold = 256
 
         # Filter by Color
@@ -585,23 +585,23 @@ def SimpleBlobWithCameraV4(inputSource): # Best Performance ## Big white blob = 
         # Filter by Area.
         params.filterByArea = True
         # params.minArea = 800        
-        params.minArea = 200
-        # params.maxArea = 800
+        params.minArea = 350
+        params.maxArea = 1200
 
         # Filter by Circularity
         params.filterByCircularity = True
-        params.minCircularity = 0.25
+        params.minCircularity = 0.3
         # params.minCircularity = 0.2
 
         # Filter by Convexity
         params.filterByConvexity = True
-        params.minConvexity = 0.1
+        params.minConvexity = 0.15
         # params.minConvexity = 0.2
 
         # Filter by Inertia
         params.filterByInertia = True
         # params.minInertiaRatio = 0.25
-        params.minInertiaRatio = 0.2
+        params.minInertiaRatio = 0.17
 
 
         # # Create a detector with the parameters
@@ -648,13 +648,24 @@ def SimpleBlobWithCameraV4(inputSource): # Best Performance ## Big white blob = 
         for i in range(nblobs):
             print(keypoints_with_id[i])
             cv2.putText(im_with_keypoints, str(keypoints_with_id[i][3]), (int(keypoints_with_id[i][0]), int(
-                keypoints_with_id[i][1])), font, 0.5, (0, 255, 124), 4, cv2.LINE_AA)
+                keypoints_with_id[i][1])), font, 0.5, (0, 0, 0), 2, cv2.LINE_AA)
         # print('keu',keypoints_with_id)
-        angle = angleCalculationSimple(keypoints_with_id)
-        pos = 30
+        angle = angleCalculationV3(keypoints_with_id)
+        # print('angleeeeeeeeeeeeeee',angle)
+        pos = 90
         for i in range(len(angle)):
-            cv2.putText(frame, 'Angle of point '+str(angle[i][2])+' is ' + str(
-                round((angle[i][3]), 2)), (100, pos), font, 1, (255, 255, 255), 3, cv2.LINE_AA)
+            angle1 = angle[i][4][0]
+            angle2 = angle[i][4][1]
+            if(angle2 == 0):
+                cv2.putText(im_with_keypoints, 'Angle of point '+str(angle[i][3])+' is ' + str(
+                    round((angle1), 2)), (20, pos), font, 0.5, (0, 255, 255), 2, cv2.LINE_AA)
+                # pos = pos + 30
+            else:
+                cv2.putText(im_with_keypoints, 'Angle of point '+str(angle[i][3])+' is ' + str(
+                    round((angle1), 2)), (20, pos), font, 0.5, (0, 255, 255), 2, cv2.LINE_AA)
+                pos = pos + 30
+                cv2.putText(im_with_keypoints, 'Angle of point '+str(angle[i][3])+' dash is ' + str(
+                    round((angle2), 2)), (20, pos), font, 0.5, (0, 255, 255),2, cv2.LINE_AA)
             pos = pos + 30
         print(nblobs, 'From Blobs')
         # print(detected_keypoints_toString)
@@ -1105,7 +1116,7 @@ def angleCalculation2(p1, p2):
     # r = vg.angle(vec1, vec2)
     p21x = p1[0] - p2[0] if p1[0] > p2[0] else p2[0] - p1[0]
     p21y = p1[1]-p2[1] if p1[1] > p2[1] else p2[1] - p1[1]
-    angle = float(math.atan2(p21x, p21y))
+    angle = float(math.atan2(p21y, p21x))
     angle = angle * 180 / math.pi
     return angle
 
@@ -1159,7 +1170,7 @@ def angleCalculationSimple(data):
 def angleCalculationV2(data):
     newData = []
     p1 = (data[0][0], data[0][1])
-    p2 = (480, 985)
+    p2 = (408, 390)
     angle = angleCalculation2(p1,p2)
     newData.append((data[0][0], data[0][1], data[0][2], (angle,0)))
     # threading.Timer(1.0, angleCalculation).start()
@@ -1174,7 +1185,7 @@ def angleCalculationV2(data):
         if(i == len(data)-1): # Last Point with horizontal calc
             p1 = (data[i-1][0], data[i-1][1])
             p2 = (data[i][0], data[i][1])
-            p3 = (712, 284)
+            p3 = (490, 21) #Horizontal Coordinate with the hip
             # angle = angleCalculation2(p21,p23)
             # print('da5al' ,p1, p2, p3)
             angle2 = angle3(p1, p2, p3)
@@ -1199,7 +1210,7 @@ def angleCalculationV2(data):
                 angle2 = angle3(p1, p2, p3)
                 # print(angle2)
                 # print(angle2 , 'sssssssssssssssssssssssssssssssssssssss', p1,(data[i-2][0],data[i-2][1]))
-            if(i+1 == len(data)-2):
+            if(i+1 == len(data)-2): # Second way of calculating knee angle
                 angle2 = 180 - angle
             # print('an2',angle2)
             newData.append((data[i+1][0], data[i+1][1], data[i+1][2], (angle,angle2)))
@@ -1207,7 +1218,60 @@ def angleCalculationV2(data):
             # data[i+1] = newCord
             # print('angleeee', angle)
     return newData
-
+def angleCalculationV3(data): # For Simple Blob
+    newData = []
+    p1 = (data[0][0], data[0][1])
+    p2 = (408, 390)
+    angle = angleCalculation2(p1,p2)
+    print('angleeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',angle ,data[0][0],data[0][1] )
+    newData.append((data[0][0], data[0][1], data[0][2],data[0][3], (angle,0)))
+    # threading.Timer(1.0, angleCalculation).start()
+    for i in range(len(data)):
+        newCord = []
+        angle2 = 0
+        # if(i == len(data)-2): # knee outer angle calc Not Working
+        #     p1 = (data[i+1][0],data[i+1][1])
+        #     p2 = (data[i][0],data[i][1])
+        #     angle2 = angleCalculation2(p1,p2)
+        #     print('da5al',angle2, p1,p2)
+        if(i == len(data)-1): # Last Point with horizontal calc
+            p1 = (data[i-1][0], data[i-1][1])
+            p2 = (data[i][0], data[i][1])
+            p3 = (data[i][0]+300,  data[i][1]) #Horizontal Coordinate with the hip
+            # angle = angleCalculation2(p21,p23)
+            # print('da5al' ,p1, p2, p3)
+            angle2 = angle3(p1, p2, p3)
+            newData.append((data[i][0], data[i][1], data[i][2],data[i][3], (angle2,0)))
+        if(i+2 < len(data)): 
+            if(i+1 != 1):
+                print(i+2, len(data))
+                p1 = (data[i][0], data[i][1])
+                p2 = (data[i+1][0], data[i+1][1])
+                p3 = (data[i+2][0], data[i+2][1])
+                # p21x = p1[0] - p2[0] if p1[0] > p2[0] else p2[0] - p1[0]
+                # p21y = p1[1]-p2[1] if p1[1] > p2[1] else p2[1] - p1[1]
+                # p21 = (p21x, p21y)
+                # p23x = p3[0] - p2[0] if p3[0] > p2[0] else p2[0] - p3[0]
+                # p23y = p3[1]-p2[1] if p3[1] > p2[1] else p2[1] - p3[1]
+                # p23 = (p23x, p23y)
+                # angle = angleCalculation2(p21,p23)
+                angle = angle3(p1, p2, p3)
+                if(i+1 == 3): # The fourth blob ankle right way to calculate the angle
+                    p1 = (data[i-1][0], data[i-1][1])
+                    p2 = (data[i+1][0], data[i+1][1])
+                    p3 = (data[i+2][0], data[i+2][1])
+                    # angle2 = angle3(p1, p2, p3)
+                    angle = angle3(p1, p2, p3)
+                    # print(angle2)
+                    # print(angle2 , 'sssssssssssssssssssssssssssssssssssssss', p1,(data[i-2][0],data[i-2][1]))
+                if(i+1 == len(data)-2): # Second way of calculating knee angle
+                    angle2 = 180 - angle
+                # print('an2',angle2)
+                newData.append((data[i+1][0], data[i+1][1], data[i+1][2],data[i+1][3], (angle,angle2)))
+                # newData.append((data[i][0],data[i][1]))
+                # data[i+1] = newCord
+                # print('angleeee', angle)
+    return newData
 
 def angle_cos(p0, p1, p2):
     d1, d2 = (p0-p1).astype('float'), (p2-p1).astype('float')
@@ -1477,11 +1541,11 @@ def append_dict_as_row(file_name, dict_of_elem, field_names):
         dict_writer.writerow(dict_of_elem)
 
 img = cv2.imread("./images/cyclingP.png", 1)
-inputSource = 'FirstTrial.mp4'
+inputSource = 'FourthTrial.mp4'
 # img = cv2.resize(img,(656,368))
 # SimpleBlobDetection(img)
 # SimpleBlobDetection(img)
-SimpleBlobWithCameraV3(inputSource)
+SimpleBlobWithCameraV4(inputSource)
 # blobDetLive(inputSource)
 # findBlobVid(inputSource)
 # SimpleBlobWithCameraV1(inputSource)
