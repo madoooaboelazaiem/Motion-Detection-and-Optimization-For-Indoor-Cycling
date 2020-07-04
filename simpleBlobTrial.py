@@ -463,23 +463,23 @@ def SimpleBlobWithCameraV3(inputSource): ## Big white blob = 23.x so area 530 ma
         # Filter by Area.
         params.filterByArea = True
         # params.minArea = 800        
-        params.minArea = 150
-        # params.maxArea = 800
+        params.minArea = 300
+        params.maxArea = 1200
 
         # Filter by Circularity
         params.filterByCircularity = True
-        params.minCircularity = 0.25
+        params.minCircularity = 0.2
         # params.minCircularity = 0.2
 
         # Filter by Convexity
-        params.filterByConvexity = True
+        params.filterByConvexity = False
         params.minConvexity = 0.1
         # params.minConvexity = 0.2
 
         # Filter by Inertia
         params.filterByInertia = True
         # params.minInertiaRatio = 0.25
-        params.minInertiaRatio = 0.2
+        params.minInertiaRatio = 0.15
 
 
         # # Create a detector with the parameters
@@ -539,7 +539,7 @@ def SimpleBlobWithCameraV3(inputSource): ## Big white blob = 23.x so area 530 ma
         cv2.imshow("new Keypoints", im_with_keypoints)
         vid_writer.write(im_with_keypoints)
 def SimpleBlobWithCameraV4(inputSource): # Best Performance ## Big white blob = 23.x so area 530 make it 540 Small one 18 equals 324
-    cap = cv2.VideoCapture(inputSource)
+    cap = cv2.VideoCapture(2)
     fps = cap.get(cv2.CAP_PROP_FPS)
     print('fps',fps)
     hasFrame, frame = cap.read()
@@ -1477,11 +1477,11 @@ def append_dict_as_row(file_name, dict_of_elem, field_names):
         dict_writer.writerow(dict_of_elem)
 
 img = cv2.imread("./images/cyclingP.png", 1)
-inputSource = 'record2.mp4'
+inputSource = 'FirstTrial.mp4'
 # img = cv2.resize(img,(656,368))
 # SimpleBlobDetection(img)
 # SimpleBlobDetection(img)
-SimpleBlobWithCameraV4(inputSource)
+SimpleBlobWithCameraV3(inputSource)
 # blobDetLive(inputSource)
 # findBlobVid(inputSource)
 # SimpleBlobWithCameraV1(inputSource)
