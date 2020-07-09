@@ -538,6 +538,7 @@ def SimpleBlobWithCameraV3(inputSource): ## Big white blob = 23.x so area 530 ma
         # im_with_keypoints = blobConnection(im_with_keypoints)
         cv2.imshow("new Keypoints", im_with_keypoints)
         vid_writer.write(im_with_keypoints)
+
 def SimpleBlobWithCameraV4(inputSource): # Best Performance ## Big white blob = 23.x so area 530 make it 540 Small one 18 equals 324
     cap = cv2.VideoCapture(inputSource)
     fps = cap.get(cv2.CAP_PROP_FPS)
@@ -546,7 +547,8 @@ def SimpleBlobWithCameraV4(inputSource): # Best Performance ## Big white blob = 
     vid_writer = cv2.VideoWriter('temp.mp4', cv2.VideoWriter_fourcc(
         'M', 'J', 'P', 'G'), 30, (frame.shape[1], frame.shape[0]))
     count = 0
-    df = pd.DataFrame(columns=['1','2','3','4','5','6'])
+    rowNames =['PedalBlob','HeelBlob','AnkleBlob','KneeBlob','KneeBlob2','HipBlob']
+    df = pd.DataFrame(columns=['PedalBlob','HeelBlob','AnkleBlob','KneeBlob','KneeBlob2','HipBlob'])
     # print(frame.shape[1], frame.shape[0])
     while cv2.waitKey(1) < 0:
         hasFrame, frame = cap.read()
@@ -574,7 +576,7 @@ def SimpleBlobWithCameraV4(inputSource): # Best Performance ## Big white blob = 
         # im = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         # cv2.imshow('s',gray)
         # Change thresholds
-        params.minThreshold = 20
+        params.minThreshold = 1
         params.maxThreshold = 256
 
         # Filter by Color
@@ -584,8 +586,8 @@ def SimpleBlobWithCameraV4(inputSource): # Best Performance ## Big white blob = 
 
         # Filter by Area.
         params.filterByArea = True
-        # params.minArea = 800        
-        params.minArea = 350
+        # params.minArea = 150        
+        params.minArea = 300
         params.maxArea = 1200
 
         # Filter by Circularity
@@ -595,13 +597,13 @@ def SimpleBlobWithCameraV4(inputSource): # Best Performance ## Big white blob = 
 
         # Filter by Convexity
         params.filterByConvexity = True
-        params.minConvexity = 0.15
+        params.minConvexity = 0.1
         # params.minConvexity = 0.2
 
         # Filter by Inertia
         params.filterByInertia = True
         # params.minInertiaRatio = 0.25
-        params.minInertiaRatio = 0.17
+        params.minInertiaRatio = 0.18
 
 
         # # Create a detector with the parameters
@@ -635,7 +637,7 @@ def SimpleBlobWithCameraV4(inputSource): # Best Performance ## Big white blob = 
             detected_keypoints_toString.append((('X: ')+str(keypointCoordinates[i][0]))+('  Y: ')+(str(keypointCoordinates[i][1]))+' size: '+(
                 str(keypointCoordinates[i][2])))  # Converting the x and y positions to strings
             keypoint_id += 1
-
+        keypoints_with_id = flipCoord(keypoints_with_id)
         nblobs = len(keypoints)
         # Draw detected blobs as red circles.
         # cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS ensures the size of the circle corresponds to the size of blob
@@ -650,7 +652,8 @@ def SimpleBlobWithCameraV4(inputSource): # Best Performance ## Big white blob = 
             cv2.putText(im_with_keypoints, str(keypoints_with_id[i][3]), (int(keypoints_with_id[i][0]), int(
                 keypoints_with_id[i][1])), font, 0.5, (0, 0, 0), 2, cv2.LINE_AA)
         # print('keu',keypoints_with_id)
-        angle = angleCalculationV3(keypoints_with_id)
+        if count%30 == 0 :
+            angle = angleCalculationV3(keypoints_with_id)
         # print('angleeeeeeeeeeeeeee',angle)
         pos = 90
         for i in range(len(angle)):
@@ -678,22 +681,319 @@ def SimpleBlobWithCameraV4(inputSource): # Best Performance ## Big white blob = 
             print('count',count)
             field_names = []
             row_dict = {}
-            for i in range(len(angle)):
+            toBeAdded = {}
+            flag = False
+            for i in range(len(rowNames)):
                 # print('anglle',angle)
-                col = str(angle[i][3])
                 # print('col',col)
-                field_names.append(col)
-                row_dict[col] = angle[i][4]
-                # print('row,',row_dict[col])
-    
+                # if(i < len(rowNames)):
+                if(i < len(angle) and i + 1 < len(rowNames)):
+                    angle1 = angle[i][4][0]
+                    angle2 = angle[i][4][1]
+                    if(angle2 == 0):
+                        if flag == False :
+                            # field_names.append(rowNames[i])
+                            row_dict[i] = angle[i][4]
+                            toBeAdded[rowNames[i]] = angle1
+                        else:
+                            # field_names.append(rowNames[i+1])
+                            row_dict[i] = angle[i][4]
+                            toBeAdded[rowNames[i+1]] = angle1
+                    # print('row,',row_dict[col])
+                    else:
+                        field_names.append(rowNames[i])
+                        row_dict[i] = angle1
+                        field_names.append(rowNames[i+1])
+                        row_dict[i+1] = angle1
+                        toBeAdded[rowNames[i]] = angle1
+                        # print('Dakhalaaaaaaaaaaaaaaaa',toBeAdded,angle2)
+                        toBeAdded[rowNames[i+1]] = angle2
+                        # print('Dakhalaaaaaaaaaaaaaaaa',toBeAdded,angle2,rowNames[i+1],rowNames[i+2],angle[i+1][4][0])
+                        i = i + 1
+                        flag = True
+
                 # Append a dict as a row in csv file
-            df = addRow(df,row_dict)
+            print('Tobeeeeeeeeeeeeeeeeeeeeeeeee',toBeAdded)
+            df = df.append(toBeAdded , ignore_index=True)
+            df.to_csv('data.csv') 
+
+            # df = addRow(df,row_dict)
             print(df)  
         count+=1
         
         cv2.imshow("new Keypoints", im_with_keypoints)
         vid_writer.write(im_with_keypoints)
 
+def SimpleBlobWithCameraV5(inputSource): # Best Performance ## Big white blob = 23.x so area 530 make it 540 Small one 18 equals 324
+    cap = cv2.VideoCapture(inputSource)
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    print('fps',fps)
+    hasFrame, frame = cap.read()
+    vid_writer = cv2.VideoWriter('temp.mp4', cv2.VideoWriter_fourcc(
+        'M', 'J', 'P', 'G'), 30, (frame.shape[1], frame.shape[0]))
+    count = 0
+    rowNames =['PedalBlob','HeelBlob','AnkleBlob','KneeBlob','KneeBlob2','HipBlob']
+    df = pd.DataFrame(columns=['PedalBlob','HeelBlob','AnkleBlob','KneeBlob','KneeBlob2','HipBlob'])
+    # print(frame.shape[1], frame.shape[0])
+    while cv2.waitKey(1) < 0:
+        hasFrame, frame = cap.read()
+        # print('fpsssssssssssssssss', cv2.CAP_PROP_POS_FRAMES)
+        # cap.set(cv2.CAP_PROP_POS_FRAMES, count)
+        # count = count  # For Skipping Frames
+        if not hasFrame:
+            cv2.waitKey()
+            break
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        blur = cv2.medianBlur(gray, 5)
+        # edgeDetectedImage = cv2.Canny(blur, 60, 100)
+        sharpen_kernel = np.array([[-1, -1, -1], [-1, 9, -1], [-1, -1, -1]])
+        sharpen = cv2.filter2D(blur, -1, sharpen_kernel)
+        ret, x = cv2.threshold(blur, 155, 255, cv2.THRESH_BINARY)
+        cv2.imshow('sh',x)
+        # edgeDetectedImage = cv2.threshold(sharpen,140, 256, cv2.THRESH_BINARY_INV + cv2.THRESH_BINARY)[1] ## Make high light intensity on blobs and increase the threshold as you want
+        edgeDetectedImage = np.invert(x)
+        #Default  
+        # edgeDetectedImage = cv2.threshold(sharpen,140, 256, cv2.THRESH_BINARY_INV)[1] ## Make high light intensity on blobs and increase the threshold as you want
+
+        # edgeDetectedImage = cv2.threshold(sharpen,140, 256, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1] ## Make high light intensity on blobs and increase the threshold as you want
+        cv2.imshow('Edge Detected Image', edgeDetectedImage)
+        params = cv2.SimpleBlobDetector_Params()
+        # im = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        # cv2.imshow('s',gray)
+        # Change thresholds
+        params.minThreshold = 1
+        params.maxThreshold = 256
+
+        # Filter by Color
+
+        params.filterByColor = True
+        params.blobColor = 0  # for black
+
+        # Filter by Area.
+        params.filterByArea = True
+        # params.minArea = 150        
+        params.minArea = 300
+        params.maxArea = 1200
+
+        # Filter by Circularity
+        params.filterByCircularity = True
+        params.minCircularity = 0.3
+        # params.minCircularity = 0.2
+
+        # Filter by Convexity
+        params.filterByConvexity = True
+        params.minConvexity = 0.1
+        # params.minConvexity = 0.2
+
+        # Filter by Inertia
+        params.filterByInertia = True
+        # params.minInertiaRatio = 0.25
+        params.minInertiaRatio = 0.18
+
+
+        # # Create a detector with the parameters
+        # ver = (cv2.__version__).split('.')
+        # if int(ver[0]) < 3 :
+        # 	detector = cv2.SimpleBlobDetector(params)
+        # else :
+        # 	detector = cv2.SimpleBlobDetector_create(params)
+
+        # Auto Scale Detector
+        detector = cv2.SimpleBlobDetector_create(params)
+
+        # Detect blobs.
+        keypoints = detector.detect(edgeDetectedImage)
+        blobPosition = []
+        keypointCoordinates = []
+        detected_keypoints_toString = []
+        detected_keypoints = []
+        keypoints_with_id = []
+        keypoint_id = 1
+        for keypoint in keypoints:
+            blobPosition = (
+                keypoint.pt[0],
+                keypoint.pt[1],
+                keypoint.size)
+            keypointCoordinates.append(blobPosition)
+        keypointCoordinates = sorted(
+                keypointCoordinates, key=lambda k: (k[1],k[0]), reverse=True)
+        for i in range(len(keypoints)):
+            keypoints_with_id.append(keypointCoordinates[i] + (keypoint_id,))
+            detected_keypoints_toString.append((('X: ')+str(keypointCoordinates[i][0]))+('  Y: ')+(str(keypointCoordinates[i][1]))+' size: '+(
+                str(keypointCoordinates[i][2])))  # Converting the x and y positions to strings
+            keypoint_id += 1
+        keypoints_with_id = flipCoord(keypoints_with_id)
+        nblobs = len(keypoints)
+        # Draw detected blobs as red circles.
+        # cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS ensures the size of the circle corresponds to the size of blob
+        # for curKey in keypointCoordinates:
+        #     frame = cv2.circle(frame,(int(curKey[0]),int(curKey[1])),int(curKey[2]/2),(0, 0, 0), 10)
+        # im_with_keypoints = frame 
+        im_with_keypoints = cv2.drawKeypoints(frame, keypoints, np.array(
+            []), (255, 0, 255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        for i in range(nblobs):
+            print(keypoints_with_id[i])
+            cv2.putText(im_with_keypoints, str(keypoints_with_id[i][3]), (int(keypoints_with_id[i][0]), int(
+                keypoints_with_id[i][1])), font, 0.5, (0, 0, 0), 2, cv2.LINE_AA)
+        # print('keu',keypoints_with_id)
+        if count%30 == 0 :
+            angle = angleCalculationV3(keypoints_with_id)
+            optimizedAngles = anglesOptimizer(angle)
+        # print('angleeeeeeeeeeeeeee',angle)
+        pos = 90
+        for i in range(len(angle)):
+            if not optimizedAngles[i]:
+                angle1 = angle[i][4][0]
+                angle2 = angle[i][4][1]
+                if(angle2 == 0):
+                    cv2.putText(im_with_keypoints, 'Angle of point '+str(angle[i][3])+' is ' + str(
+                        (angle1)), (20, pos), font, 0.5, (0, 255, 255), 2, cv2.LINE_AA)
+                    # pos = pos + 30
+                else:
+                    cv2.putText(im_with_keypoints, 'Angle of point '+str(angle[i][3])+' is ' + str(
+                        (angle1)), (20, pos), font, 0.5, (0, 255, 255), 2, cv2.LINE_AA)
+                    pos = pos + 30
+                    cv2.putText(im_with_keypoints, 'Angle of point '+str(angle[i][3])+' dash is ' + str(
+                        (angle2)), (20, pos), font, 0.5, (0, 255, 255),2, cv2.LINE_AA)
+                pos = pos + 30
+            else:
+                angle1 = angle[i][4][0]
+                # angle2 = angle[i][4][1]
+                currentOptimizedAngle = optimizedAngles[i][2]
+                correctPose = optimizedAngles[i][1]
+                # print(angle[i][3])
+                # if(angle2 == 0):
+                cv2.putText(im_with_keypoints, 'Angle of point '+str(angle[i][3])+' is ' + str(
+                        (angle1)), (20, pos), font, 0.5, (0, 255, 255), 2, cv2.LINE_AA)
+                pos = pos + 30                
+                cv2.putText(im_with_keypoints, 'Angle of point '+str(angle[i][3])+' needs to be '+correctPose+' by ' + str(
+                    (currentOptimizedAngle))+' degrees', (20, pos), font, 0.5, (0, 0, 255), 2, cv2.LINE_AA)
+                    # pos = pos + 30
+                    # cv2.putText(im_with_keypoints, 'Angle of point '+str(angle[i][3])+' is ' + str(
+                    #     (angle1)), (20, pos), font, 0.5, (0, 255, 255), 2, cv2.LINE_AA)
+                # else:
+                #     cv2.putText(im_with_keypoints, 'Angle of point '+str(angle[i][3])+' needs to be '+correctPose+' by ' + str(
+                #         (currentOptimizedAngle)) + ' degrees', (20, pos), font, 0.5, (0, 0, 255), 2, cv2.LINE_AA)
+                #     pos = pos + 30
+                #     cv2.putText(im_with_keypoints, 'Angle of point '+str(angle[i][3])+' needs to be '+correctPose+' by ' + str(
+                #         (optimizedAngles[i][3]))+' degrees', (20, pos), font, 0.5, (0, 0, 255),2, cv2.LINE_AA)
+                pos = pos + 30
+
+        print(nblobs, 'From Blobs')
+        # print(detected_keypoints_toString)
+        # cv2.imwrite('Output.jpg', frameClone)
+        # cimg = cv2.imread('Output.jpg',0)
+        # cv2.imshow('gray',cimg)
+        # Show keypoints
+        # im_with_keypoints = blobConnection(im_with_keypoints)
+        if count%30 == 0 :
+            print('count',count)
+            field_names = []
+            row_dict = {}
+            toBeAdded = {}
+            flag = False
+            for i in range(len(rowNames)):
+                # print('anglle',angle)
+                # print('col',col)
+                # if(i < len(rowNames)):
+                if(i < len(angle) and i + 1 < len(rowNames)):
+                    angle1 = angle[i][4][0]
+                    angle2 = angle[i][4][1]
+                    if(angle2 == 0):
+                        if flag == False :
+                            # field_names.append(rowNames[i])
+                            row_dict[i] = angle[i][4]
+                            toBeAdded[rowNames[i]] = angle1
+                        else:
+                            # field_names.append(rowNames[i+1])
+                            row_dict[i] = angle[i][4]
+                            toBeAdded[rowNames[i+1]] = angle1
+                    # print('row,',row_dict[col])
+                    else:
+                        field_names.append(rowNames[i])
+                        row_dict[i] = angle1
+                        field_names.append(rowNames[i+1])
+                        row_dict[i+1] = angle1
+                        toBeAdded[rowNames[i]] = angle1
+                        # print('Dakhalaaaaaaaaaaaaaaaa',toBeAdded,angle2)
+                        toBeAdded[rowNames[i+1]] = angle2
+                        # print('Dakhalaaaaaaaaaaaaaaaa',toBeAdded,angle2,rowNames[i+1],rowNames[i+2],angle[i+1][4][0])
+                        i = i + 1
+                        flag = True
+
+                # Append a dict as a row in csv file
+            df = df.append(toBeAdded , ignore_index=True)
+            df.to_csv('data.csv') 
+
+            # df = addRow(df,row_dict)
+            # print(df)  
+        count+=1
+        
+        cv2.imshow("new Keypoints", im_with_keypoints)
+        vid_writer.write(im_with_keypoints)
+
+def anglesOptimizer(data):
+    # print(data , 'dataaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
+    #Covering both normal cycling and aero cycling techniques   
+    # +ve means Extend -ve means flex
+    # Average Knee 65 total flexation per cycle 
+    minKnee = 70 
+    maxKnee = 148
+    maxKnee2 = 110
+    minKnee2 = 32
+    # Average 20 to 40 total flex per cycle 
+    minHip = 18
+    maxHip = 50
+    
+    # Average Knee 15 total flexation per cycle
+    minAnkle = 75 ## Used as heel in our implementation
+    maxAnkle = 105
+
+    optimizingAngle = [(False)]*len(data)  
+    ankleAngle = 0
+    kneeAngle = 0
+    hipAngle = 0
+    optimizedKnee2 = 0
+    extend = 'Extended'
+    flex = 'Flexed'
+    if len(data) > 1:
+        ankleAngle = data[1][4][0]
+        if ankleAngle < minAnkle :
+            optimizedAnkle = minAnkle - ankleAngle # Extend
+            optimizingAngle[1] = (True,extend,optimizedAnkle)
+        elif ankleAngle > maxAnkle:
+            optimizedAnkle = ankleAngle - maxAnkle # Flex
+            optimizingAngle[1] = (True,flex,optimizedAnkle)
+        else:
+            optimizingAngle[1] = (False)
+
+    if len(data) > 3:
+        kneeAngle = data[3][4][0]
+        kneeAngle2 = data[3][4][1]
+        if kneeAngle < minKnee :
+            optimizedKnee = minKnee - kneeAngle # Extend
+            if kneeAngle2 != 0:
+                optimizedKnee2 = maxKnee2 - kneeAngle2
+            optimizingAngle[3] = (True,extend,optimizedKnee,optimizedKnee2)
+        elif kneeAngle > maxKnee:
+            optimizedKnee = kneeAngle - maxKnee # Flex
+            if kneeAngle2 != 0:
+                optimizedKnee2 = kneeAngle2 - minKnee2
+            optimizingAngle[3] = (True,flex,optimizedKnee,optimizedKnee2)
+        else:
+            optimizingAngle[3] = (False)
+    if len(data) > 4:
+        hipAngle = data[4][4][0]
+        if hipAngle < minHip :
+            optimizedHip = minHip - hipAngle # Extend
+            optimizingAngle[4] = (True,extend,optimizedHip)
+        elif hipAngle > maxHip:
+            optimizedHip = hipAngle - maxHip # Flex
+            optimizingAngle[4] = (True,flex,optimizedHip)
+        else:
+            optimizingAngle[4] = (False)
+    return optimizingAngle
 
 
 def SimpleBlobDetection(frame):
@@ -1120,7 +1420,25 @@ def angleCalculation2(p1, p2):
     angle = angle * 180 / math.pi
     return angle
 
-
+def flipCoord(data):
+    first = data[0]
+    second = data[1]
+    third = data[2]
+    result = sorted([first,second,third], key=lambda x: x[0],reverse = True)
+    out1 = list(result[0])
+    out1[3] = 1
+    out2 = list(result[1])
+    out2[3] = 2
+    out3 = list(result[2])
+    out3[3] = 3
+    res1 = tuple(out1)
+    data[0] = res1
+    res2 = tuple(out2)
+    data[1] = res2
+    res3 = tuple(out3)
+    data[2] = res3
+    return data
+        
 def angleCalculation(data):
     newData = []
     # threading.Timer(1.0, angleCalculation).start()
@@ -1223,8 +1541,8 @@ def angleCalculationV3(data): # For Simple Blob
     p1 = (data[0][0], data[0][1])
     p2 = (408, 390)
     angle = angleCalculation2(p1,p2)
-    print('angleeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',angle ,data[0][0],data[0][1] )
-    newData.append((data[0][0], data[0][1], data[0][2],data[0][3], (angle,0)))
+    # print('angleeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',angle ,data[0][0],data[0][1] )
+    newData.append((data[0][0], data[0][1], data[0][2],data[0][3], (math.ceil(angle),0)))
     # threading.Timer(1.0, angleCalculation).start()
     for i in range(len(data)):
         newCord = []
@@ -1241,7 +1559,7 @@ def angleCalculationV3(data): # For Simple Blob
             # angle = angleCalculation2(p21,p23)
             # print('da5al' ,p1, p2, p3)
             angle2 = angle3(p1, p2, p3)
-            newData.append((data[i][0], data[i][1], data[i][2],data[i][3], (angle2,0)))
+            newData.append((data[i][0], data[i][1], data[i][2],data[i][3], (math.ceil(angle2),0)))
         if(i+2 < len(data)): 
             if(i+1 != 1):
                 print(i+2, len(data))
@@ -1267,7 +1585,7 @@ def angleCalculationV3(data): # For Simple Blob
                 if(i+1 == len(data)-2): # Second way of calculating knee angle
                     angle2 = 180 - angle
                 # print('an2',angle2)
-                newData.append((data[i+1][0], data[i+1][1], data[i+1][2],data[i+1][3], (angle,angle2)))
+                newData.append((data[i+1][0], data[i+1][1], data[i+1][2],data[i+1][3], (math.ceil(angle),math.ceil(angle2))))
                 # newData.append((data[i][0],data[i][1]))
                 # data[i+1] = newCord
                 # print('angleeee', angle)
@@ -1541,11 +1859,11 @@ def append_dict_as_row(file_name, dict_of_elem, field_names):
         dict_writer.writerow(dict_of_elem)
 
 img = cv2.imread("./images/cyclingP.png", 1)
-inputSource = 'FourthTrial.mp4'
+inputSource = 'FirstTrial.mp4'
 # img = cv2.resize(img,(656,368))
 # SimpleBlobDetection(img)
 # SimpleBlobDetection(img)
-SimpleBlobWithCameraV4(inputSource)
+SimpleBlobWithCameraV5(inputSource)
 # blobDetLive(inputSource)
 # findBlobVid(inputSource)
 # SimpleBlobWithCameraV1(inputSource)
