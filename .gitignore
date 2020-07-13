@@ -2,3 +2,5 @@
 *.mov
 *.MOV
 *.avi
+*.pkl
+*.csv
