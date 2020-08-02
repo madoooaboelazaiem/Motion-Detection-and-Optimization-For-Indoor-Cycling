@@ -14,3 +14,7 @@ print(val)
 # 77  94 104  38 modelWithAugmentation
 # 72  95 104  39 modelWithAugmentation2
 # 79  97 100  40 modelWithAugmentation3
+# 90  98 93   41 ModelWithLinearSVR
+# 90.2  95.2 117.2  45. ModelWithKNN
+# 124.  85. 146.  50 ModelXGB
+# 124.  85. 146.  42 ModelDecisionTree ## Best

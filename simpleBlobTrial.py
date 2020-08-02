@@ -753,7 +753,8 @@ def SimpleBlobWithCameraV5(inputSource):
     # print(frame.shape[1], frame.shape[0])
     while cv2.waitKey(1) < 0:
         hasFrame, frame = cap.read()
-        frame = cv2.resize(frame, (800, 600))
+        if hasFrame:
+            frame = cv2.resize(frame, (800, 600))
         # print('fpsssssssssssssssss', cv2.CAP_PROP_POS_FRAMES)
         # cap.set(cv2.CAP_PROP_POS_FRAMES, count)
         # count = count  # For Skipping Frames
@@ -961,12 +962,13 @@ def SimpleBlobWithCameraV6(inputSource):
     count = 0
     rowNames = ['PedalBlob', 'HeelBlob', 'AnkleBlob',
         'KneeBlob', 'KneeBlob2', 'HipBlob']
-    model2 = joblib.load("model3.pkl")
+    model2 = joblib.load("modelDecisionTree.pkl")
     df = pd.DataFrame(columns=['PedalBlob', 'HeelBlob',
                       'AnkleBlob', 'KneeBlob', 'KneeBlob2', 'HipBlob'])
     dfInput = pd.read_csv('SecondTrialOutputMerged.csv')  # , sep=';'
     dfInput = dfInput.apply(np.ceil)
     dfInput = dfInput.astype(int, errors='ignore')
+    pedalArray = []
     dfInput = dfInput.drop(
         columns=['PedalBlob', 'HeelBlob', 'AnkleBlob', 'KneeBlob', 'KneeBlob2', 'HipBlob'])
     Powercolumn = dfInput["Power"]
@@ -1002,7 +1004,7 @@ def SimpleBlobWithCameraV6(inputSource):
         sharpen_kernel = np.array([[-1, -1, -1], [-1, 9, -1], [-1, -1, -1]])
         sharpen = cv2.filter2D(blur, -1, sharpen_kernel)
         ret, x = cv2.threshold(blur, 155, 255, cv2.THRESH_BINARY)
-        # cv2.imshow('sh',x)
+        cv2.imshow('sh',x)
         # edgeDetectedImage = cv2.threshold(sharpen,140, 256, cv2.THRESH_BINARY_INV + cv2.THRESH_BINARY)[1] ## Make high light intensity on blobs and increase the threshold as you want
         edgeDetectedImage = np.invert(x)
         # Default
@@ -1089,25 +1091,39 @@ def SimpleBlobWithCameraV6(inputSource):
             cv2.putText(im_with_keypoints, str(keypoints_with_id[i][3]), (int(keypoints_with_id[i][0]), int(
                 keypoints_with_id[i][1])), font, 0.5, (0, 0, 0), 2, cv2.LINE_AA)
         # print('keu',keypoints_with_id)
-        angle = angleCalculationV3(keypoints_with_id)
+        # angle = angleCalculationV3(keypoints_with_id)
         # optimizedAngles = anglesOptimizer(angle)
-        currentPedalAngle = angle[0][4][0]/360
-        currentPower = inputLayer[rowIncrementer][0]
-        currentRPM = inputLayer[rowIncrementer][1]
-        currentBPM = inputLayer[rowIncrementer][2]
-        currentInputRow = np.array(
-            [[currentPower, currentRPM, currentBPM, currentPedalAngle]])
-        # print(currentInputRow)
-        # print(currentInputRow.shape)
-        prediction = model2.predict(currentInputRow)
-        prediction = np.ceil(prediction*360)
-        prediction = prediction.astype(int)
+        # currentPedalAngle = angle[0][4][0]/360
+        # pedalArray.append(currentPedalAngle)
+        # currentPower = inputLayer[rowIncrementer][0]
+        # currentRPM = inputLayer[rowIncrementer][1]
+        # currentBPM = inputLayer[rowIncrementer][2]
+        # currentInputRow = np.array(
+        #     [[currentPower, currentRPM, currentBPM, currentPedalAngle]])
+        # # print(currentInputRow)
+        # # print(currentInputRow.shape)
+        # prediction = model2.predict(currentInputRow)
+        # prediction = np.ceil(prediction*360)
+        # prediction = prediction.astype(int)
         # print(prediction)
         if count % 30 == 0:
+            angle = angleCalculationV3(keypoints_with_id)
+            currentPedalAngle = angle[0][4][0]/360
+            pedalArray.append(currentPedalAngle)
+            currentPower = inputLayer[rowIncrementer][0]
+            currentRPM = inputLayer[rowIncrementer][1]
+            currentBPM = inputLayer[rowIncrementer][2]
+            currentInputRow = np.array(
+                [[currentPower, currentRPM, currentBPM, currentPedalAngle]])
+            # print(currentInputRow)
+            # print(currentInputRow.shape)
+            prediction = model2.predict(currentInputRow)
+            prediction = np.ceil(prediction*360)
+            prediction = prediction.astype(int)
             rowIncrementer = rowIncrementer + 1
         # print('angleeeeeeeeeeeeeee',angle)
         pos = 90
-        if len(angle) > 5:
+        if len(angle) > 4:
             print('dakhal hip')
             angleHeel = angle[1][4][0]
             angleAnkle = angle[2][4][0]
@@ -1137,7 +1153,7 @@ def SimpleBlobWithCameraV6(inputSource):
             pos = pos + 30
             cv2.putText(im_with_keypoints, 'Angle of (Hip) should be '+ str(
                     (prediction[0][3])), (20, pos), font, 0.5, (0, 0, 255), 2, cv2.LINE_AA)
-        elif len(angle) > 4:
+        elif len(angle) > 3:
             angleHeel = angle[1][4][0]
             angleAnkle = angle[2][4][0]
             angleKnee = angle[3][4][0]
@@ -1159,7 +1175,7 @@ def SimpleBlobWithCameraV6(inputSource):
             pos = pos + 30
             cv2.putText(im_with_keypoints, 'Angle of (Knee) should be '+ str(
                     (prediction[0][2]))+' Knee2 '+str(180 - prediction[0][2]), (20, pos), font, 0.5, (0, 0, 255), 2, cv2.LINE_AA)
-        elif len(angle) > 3:
+        elif len(angle) > 2:
             angleHeel = angle[1][4][0]
             angleAnkle = angle[2][4][0]
             cv2.putText(im_with_keypoints, 'Angle of point '+str(angle[1][3])+'(Heel) is ' + str(
@@ -1174,7 +1190,7 @@ def SimpleBlobWithCameraV6(inputSource):
             cv2.putText(im_with_keypoints, 'Angle of (Ankle) should be '+ str(
                     (prediction[0][1])), (20, pos), font, 0.5, (0, 0, 255), 2, cv2.LINE_AA)         
               
-        elif len(angle) > 2:
+        elif len(angle) > 1:
             angleHeel = angle[1][4][0]
             cv2.putText(im_with_keypoints, 'Angle of point '+str(angle[1][3])+'(Heel) is ' + str(
                     (angleHeel)), (20, pos), font, 0.5, (0, 255, 255), 2, cv2.LINE_AA)
@@ -1268,6 +1284,8 @@ def SimpleBlobWithCameraV6(inputSource):
 
             # df = addRow(df,row_dict)
             # print(df)  
+        # a = np.asarray(pedalArray)
+        # np.savetxt("foo.csv",a)
         count+=1
         
         cv2.imshow("new Keypoints", im_with_keypoints)
