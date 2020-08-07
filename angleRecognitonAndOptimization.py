@@ -336,17 +336,10 @@ def flipCoord(data):
     for i in range(len(data)):
         newCord = []
         angle2 = 0
-        # if(i == len(data)-2): # knee outer angle calc Not Working
-        #     p1 = (data[i+1][0],data[i+1][1])
-        #     p2 = (data[i][0],data[i][1])
-        #     angle2 = angleCalculation2(p1,p2)
-        #     print('da5al',angle2, p1,p2)
         if(i == len(data)-1): # Last Point with horizontal calc
             p1 = (data[i-1][0], data[i-1][1])
             p2 = (data[i][0], data[i][1])
             p3 = (490, 21) #Horizontal Coordinate with the hip
-            # angle = angleCalculation2(p21,p23)
-            # print('da5al' ,p1, p2, p3)
             angle2 = angle3(p1, p2, p3)
             newData.append((data[i][0], data[i][1], data[i][2], (angle2,0)))
         if(i+2 < len(data)): 
@@ -354,28 +347,15 @@ def flipCoord(data):
             p1 = (data[i][0], data[i][1])
             p2 = (data[i+1][0], data[i+1][1])
             p3 = (data[i+2][0], data[i+2][1])
-            # p21x = p1[0] - p2[0] if p1[0] > p2[0] else p2[0] - p1[0]
-            # p21y = p1[1]-p2[1] if p1[1] > p2[1] else p2[1] - p1[1]
-            # p21 = (p21x, p21y)
-            # p23x = p3[0] - p2[0] if p3[0] > p2[0] else p2[0] - p3[0]
-            # p23y = p3[1]-p2[1] if p3[1] > p2[1] else p2[1] - p3[1]
-            # p23 = (p23x, p23y)
-            # angle = angleCalculation2(p21,p23)
             angle = angle3(p1, p2, p3)
             if(i+1 == 2):
                 p1 = (data[i-1][0], data[i][1])
                 p2 = (data[i+1][0], data[i+1][1])
                 p3 = (data[i+2][0], data[i+2][1])
                 angle2 = angle3(p1, p2, p3)
-                # print(angle2)
-                # print(angle2 , 'sssssssssssssssssssssssssssssssssssssss', p1,(data[i-2][0],data[i-2][1]))
             if(i+1 == len(data)-2): # Second way of calculating knee angle
                 angle2 = 180 - angle
-            # print('an2',angle2)
             newData.append((data[i+1][0], data[i+1][1], data[i+1][2], (angle,angle2)))
-            # newData.append((data[i][0],data[i][1]))
-            # data[i+1] = newCord
-            # print('angleeee', angle)
     return newData
 def angleCalculationV3(data):
     newData = []
