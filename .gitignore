@@ -4,3 +4,7 @@
 *.avi
 *.pkl
 *.csv
+
+!SecondTrial.mp4
+!modelXGB.pkl
+!SecondTrialOutputMerged.csv
